@@ -95,6 +95,8 @@ CUCUMBER_TAGS="@TC-001" \
 scripts/run-twentyfive-test.sh
 ```
 
+The runner automatically starts/reuses the dedicated Chrome debug profile on port `9222` and attaches Selenium to it. In Codex, approve the macOS `open` command the first time Chrome needs to be launched.
+
 ## Standard Use
 
 1. Open this runner workspace in the local AI coding agent.

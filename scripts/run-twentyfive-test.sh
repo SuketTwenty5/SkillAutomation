@@ -17,6 +17,8 @@ CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
 USE_DEBUG_CHROME="${USE_DEBUG_CHROME:-true}"
 LOCAL_RUN="${LOCAL_RUN:-true}"
 DEBUG_HOLD_BROWSER="${DEBUG_HOLD_BROWSER:-true}"
+AUTO_START_CHROME="${AUTO_START_CHROME:-true}"
+CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
 
 usage() {
   cat <<EOF
@@ -30,7 +32,37 @@ Environment:
   USE_DEBUG_CHROME    true attaches to Chrome on localhost:9222. Default true.
   LOCAL_RUN           Pass -Dlocal.run=true. Default true.
   DEBUG_HOLD_BROWSER  Pass -Ddebug=true. Default true when USE_DEBUG_CHROME=true.
+  AUTO_START_CHROME   Start Chrome debug profile if port is not listening. Default true.
+  CHROME_PROFILE      Chrome profile used for Selenium attachment.
 EOF
+}
+
+chrome_debug_ready() {
+  curl -fsS "http://127.0.0.1:${CHROME_DEBUG_PORT}/json/version" >/dev/null 2>&1
+}
+
+wait_for_chrome_debug() {
+  local attempt
+  for attempt in {1..40}; do
+    if chrome_debug_ready; then
+      return 0
+    fi
+    sleep 0.5
+  done
+  return 1
+}
+
+start_chrome_debug() {
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    return 1
+  fi
+
+  mkdir -p "$CHROME_PROFILE"
+  echo "Starting Chrome debug profile on port $CHROME_DEBUG_PORT"
+  open -na "Google Chrome" --args \
+    --remote-debugging-port="$CHROME_DEBUG_PORT" \
+    --user-data-dir="$CHROME_PROFILE" \
+    "$APP_URL"
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -51,15 +83,19 @@ if [[ ! -d "$TEST_ROOT" ]]; then
 fi
 
 if [[ "$USE_DEBUG_CHROME" == "true" ]]; then
-  if ! curl -fsS "http://127.0.0.1:${CHROME_DEBUG_PORT}/json/version" >/dev/null 2>&1; then
+  if ! chrome_debug_ready && [[ "$AUTO_START_CHROME" == "true" ]]; then
+    start_chrome_debug || true
+    wait_for_chrome_debug || true
+  fi
+
+  if ! chrome_debug_ready; then
     cat >&2 <<EOF
 ERROR: Chrome debug endpoint is not listening on port $CHROME_DEBUG_PORT.
 
-Run setup first from a normal macOS Terminal:
-  /bin/bash -c "\$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+The runner tried to start Chrome automatically. If you are running inside Codex,
+approve the macOS open command when prompted, or run this once from Terminal:
 
-Or start Chrome manually:
-  open -na "Google Chrome" --args --remote-debugging-port=$CHROME_DEBUG_PORT --user-data-dir="\$HOME/.selenium-ai-chrome"
+  open -na "Google Chrome" --args --remote-debugging-port=$CHROME_DEBUG_PORT --user-data-dir="$CHROME_PROFILE"
 EOF
     exit 3
   fi

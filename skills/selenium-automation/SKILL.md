@@ -68,7 +68,9 @@ For Twenty5/IPE execution, prefer the repository wrapper instead of hand-writing
 APP_URL="<target-url>" CUCUMBER_TAGS="@TC-001" scripts/run-twentyfive-test.sh
 ```
 
-If `.skillautomation.env` exists from `scripts/macos-consultant-setup.sh`, omit `APP_URL`; the runner will reuse the selected setup URL. The wrapper already includes `-pl tests -am`, `RunTest`, and `surefire.failIfNoSpecifiedTests=false`.
+If `.skillautomation.env` exists from `scripts/macos-consultant-setup.sh`, omit `APP_URL`; the runner will reuse the selected setup URL. The wrapper already includes `-pl tests -am`, `RunTest`, `surefire.failIfNoSpecifiedTests=false`, Chrome debug auto-start, and Selenium attach defaults.
+
+Treat every user request to "run a test", "run this script", "execute this manual test", or similar as a Selenium/Twenty5 runner request when this workspace is active. Do not ask the consultant to manually start Chrome first; run `scripts/run-twentyfive-test.sh` and let the wrapper reuse or start the debug Chrome profile. If Codex asks for approval to open Chrome or run Maven outside the sandbox, request/accept that path rather than switching to a different harness.
 
 Do not spend time recreating optional external integrations removed from the shared runner. `AzureDeploymentChecker` and `TicketHandler` are intentionally local-safe no-op stubs unless the original private implementations are restored.
 
