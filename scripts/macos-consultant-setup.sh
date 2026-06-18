@@ -362,6 +362,7 @@ ensure_selected_agent() {
 clone_or_update_workspace() {
   if [[ -d "$WORKSPACE_DIR/.git" ]]; then
     log "Updating existing workspace: $WORKSPACE_DIR"
+    remove_known_untracked_transition_files
     git -C "$WORKSPACE_DIR" pull --ff-only
   elif [[ -e "$WORKSPACE_DIR" ]]; then
     die "$WORKSPACE_DIR already exists but is not a Git repo. Set WORKSPACE_DIR to another path."
@@ -369,6 +370,23 @@ clone_or_update_workspace() {
     log "Cloning runner workspace"
     git clone "$REPO_URL" "$WORKSPACE_DIR"
   fi
+}
+
+remove_known_untracked_transition_files() {
+  local file status
+  local transition_files=(
+    "imported/twentyfive-regtest/Core/src/main/java/t5/ipe/cucumber/core/web/AzureDeploymentChecker.java"
+    "imported/twentyfive-regtest/Core/src/main/java/t5/ipe/cucumber/core/web/TicketHandler.java"
+  )
+
+  for file in "${transition_files[@]}"; do
+    [[ -e "$WORKSPACE_DIR/$file" ]] || continue
+    status="$(git -C "$WORKSPACE_DIR" status --porcelain -- "$file")"
+    if [[ "$status" == "?? $file" ]]; then
+      log "Removing old generated untracked file before pull: $file"
+      rm -f "$WORKSPACE_DIR/$file"
+    fi
+  done
 }
 
 write_workspace_env() {
