@@ -1,0 +1,58 @@
+# Consultant Setup
+
+Use this when the consultant does not already have the Selenium project.
+
+## What You Give Them
+
+Give them a private runner workspace, not only a `SKILL.md`:
+
+```text
+twentyfive-ai-test-runner/
+  skills/selenium-automation/
+  imported/twentyfive-regtest/
+```
+
+This can be a private GitHub repo, Bitbucket repo, or zip. Do not publish proprietary Selenium code in a public skills repo.
+
+## Consultant Steps
+
+1. Install Java 17+, Maven, Chrome, and Codex/Claude Code.
+2. Clone or unzip the runner workspace.
+3. Open the runner workspace in Codex/Claude Code.
+4. Install the skill locally if needed:
+
+```bash
+mkdir -p ~/.codex/skills
+cp -R skills/selenium-automation ~/.codex/skills/
+```
+
+5. Restart the agent.
+6. Start Chrome with remote debugging:
+
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$HOME/.selenium-ai-chrome"
+```
+
+7. Log in manually to the application in that Chrome.
+8. Paste the test request:
+
+```text
+Use $selenium-automation.
+Run this Confluence/manual test in my local Chrome.
+Use the bundled Twenty5 automation code first.
+
+<paste test case>
+```
+
+## Best Packaging Options
+
+Option A: Private runner repo.
+Best when consultants are allowed to receive source code.
+
+Option B: Private Maven artifact plus thin runner.
+Best when you do not want to expose full Selenium source. Package automation code as a private dependency and give consultants only a runner module.
+
+Option C: Central execution service.
+Best when consultants should not receive automation code, but then tests run in your controlled browser/session rather than their own Chrome.
