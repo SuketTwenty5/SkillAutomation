@@ -17,6 +17,7 @@ SKIP_APP_URL_PROMPT="${SKIP_APP_URL_PROMPT:-0}"
 SELECTED_APP_LABEL=""
 SELECTED_APP_URL=""
 SELECTED_AI_AGENT=""
+WORKSPACE_ENV_FILE=""
 
 APP_LABELS=(
   "Twenty5 Internal (BTP Golden)"
@@ -370,6 +371,17 @@ clone_or_update_workspace() {
   fi
 }
 
+write_workspace_env() {
+  WORKSPACE_ENV_FILE="$WORKSPACE_DIR/.skillautomation.env"
+  log "Writing workspace environment: $WORKSPACE_ENV_FILE"
+  {
+    printf 'APP_LABEL=%q\n' "$SELECTED_APP_LABEL"
+    printf 'APP_URL=%q\n' "$SELECTED_APP_URL"
+    printf 'CHROME_DEBUG_PORT=%q\n' "$CHROME_DEBUG_PORT"
+    printf 'CHROME_PROFILE=%q\n' "$CHROME_PROFILE"
+  } > "$WORKSPACE_ENV_FILE"
+}
+
 install_codex_skill_copy() {
   local source_skill="$WORKSPACE_DIR/skills/$SKILL_NAME"
   local dest_root="$HOME/.codex/skills"
@@ -580,6 +592,7 @@ main() {
   install_codex_skill_copy
   install_with_npx_skills_if_requested
   select_app_url
+  write_workspace_env
   start_debug_chrome
   print_next_prompt
   open_selected_agent

@@ -62,6 +62,16 @@ Read `references/action-catalog.md` when an action catalog exists. If it does no
 
 For Twenty5/IPE regression work, also read `references/twentyfive-action-catalog.generated.md` and inspect `imported/twentyfive-regtest` before generating any Selenium/Selenide code. Treat the imported Twenty5 code as the working example library: reuse its page objects, Cucumber step definitions, element wrappers, waits, table helpers, and Maven module structure whenever the pasted manual/Confluence test matches that domain.
 
+For Twenty5/IPE execution, prefer the repository wrapper instead of hand-writing Maven commands:
+
+```bash
+APP_URL="<target-url>" CUCUMBER_TAGS="@TC-001" scripts/run-twentyfive-test.sh
+```
+
+If `.skillautomation.env` exists from `scripts/macos-consultant-setup.sh`, omit `APP_URL`; the runner will reuse the selected setup URL. The wrapper already includes `-pl tests -am`, `RunTest`, and `surefire.failIfNoSpecifiedTests=false`.
+
+Do not spend time recreating optional external integrations removed from the shared runner. `AzureDeploymentChecker` and `TicketHandler` are intentionally local-safe no-op stubs unless the original private implementations are restored.
+
 Classify each step as:
 
 - `mapped`: implemented by existing automation code

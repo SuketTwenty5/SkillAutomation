@@ -78,6 +78,23 @@ AI_AGENT=none /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Suket
 
 On second run, installed tools are skipped, the existing workspace is pulled, the skill copy is refreshed, and an existing Chrome debug session is reused.
 
+## Run a Twenty5 test
+
+After setup and manual login in Chrome:
+
+```bash
+cd ~/SkillAutomation
+scripts/run-twentyfive-test.sh @TC-001
+```
+
+The setup script saves the selected app URL in `.skillautomation.env`, so the runner can reuse it. You can override it:
+
+```bash
+APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote" \
+CUCUMBER_TAGS="@TC-001" \
+scripts/run-twentyfive-test.sh
+```
+
 ## Standard Use
 
 1. Open this runner workspace in the local AI coding agent.
