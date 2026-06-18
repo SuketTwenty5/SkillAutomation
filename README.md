@@ -56,12 +56,18 @@ They open that folder in Codex/Claude Code, not an empty workspace.
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-This checks/installs prerequisites, clones the workspace to `~/SkillAutomation`, installs the skill copy for Codex, starts Chrome with remote debugging, and opens Claude Code in the workspace.
+This checks/installs prerequisites, clones the workspace to `~/SkillAutomation`, installs the skill copy for Codex, asks the consultant to choose a customer base URL, starts Chrome with remote debugging, opens that URL, and opens Claude Code in the workspace.
 
 Useful overrides:
 
 ```bash
 WORKSPACE_DIR="$HOME/Work/SkillAutomation" OPEN_CLAUDE=0 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+Open a specific app URL without the menu:
+
+```bash
+APP_URL="https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
 ## Standard Use

@@ -65,13 +65,34 @@ The script checks or installs:
 - Google Chrome
 - Claude Code
 
-It then clones this repo to `~/SkillAutomation`, installs the Codex skill copy, starts Chrome with remote debugging on port `9222`, and launches `claude` in the workspace.
+It then clones this repo to `~/SkillAutomation`, installs the Codex skill copy, asks the consultant to choose a customer base URL, starts Chrome with remote debugging on port `9222`, opens the selected URL, and launches `claude` in the workspace.
 
 Override defaults like this:
 
 ```bash
 WORKSPACE_DIR="$HOME/Work/SkillAutomation" \
 OPEN_CLAUDE=0 \
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+Skip the menu and open one URL directly:
+
+```bash
+APP_URL="https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com" \
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+Choose by number without prompting:
+
+```bash
+APP_CHOICE=18 \
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+Skip opening an app URL:
+
+```bash
+SKIP_APP_URL_PROMPT=1 \
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 

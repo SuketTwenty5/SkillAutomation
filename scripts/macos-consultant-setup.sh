@@ -8,6 +8,75 @@ CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
 CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
 OPEN_CLAUDE="${OPEN_CLAUDE:-1}"
 RUN_NPX_SKILLS="${RUN_NPX_SKILLS:-0}"
+APP_URL="${APP_URL:-}"
+APP_CHOICE="${APP_CHOICE:-}"
+SKIP_APP_URL_PROMPT="${SKIP_APP_URL_PROMPT:-0}"
+SELECTED_APP_LABEL=""
+SELECTED_APP_URL=""
+
+APP_LABELS=(
+  "Twenty5 Internal (BTP Golden)"
+  "AI-MFG-DEMO"
+  "HPSI"
+  "ZS DEV"
+  "ZS QA"
+  "RTX SBX"
+  "Gainwell DEV"
+  "Gainwell NONPROD"
+  "Gainwell QA"
+  "KPMG DEV (decommed)"
+  "KPMG UK QA (decommed)"
+  "KPMG UK UAT (decommed)"
+  "KPMG SBX24"
+  "Accenture DEV"
+  "SSTL DEV"
+  "SSTL QA"
+  "Tetra Pak PoV SBX"
+  "Lockheed Martin DEV"
+  "MBDA POC"
+  "BearingPoint POC"
+  "BearingPoint DEV"
+  "BearingPoint QA"
+  "BearingPoint PROD"
+  "P&G PROD quotes"
+  "P&G DEV23"
+  "P&G QA quotes"
+  "AIQUILLA"
+  "Internal system quotes"
+  "Salesforce Dev Environment"
+)
+
+APP_URLS=(
+  "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com"
+  "https://app-twenty5ipe-ai-mfg-demo.cfapps.us20.hana.ondemand.com"
+  "https://app-twenty5ipe-hpsi-dev.cfapps.us21.hana.ondemand.com"
+  "https://app-twenty5ipe-zs-dev.cfapps.us10.hana.ondemand.com"
+  "https://app-twenty5ipe-zs-qa.cfapps.us10.hana.ondemand.com"
+  "https://app-twenty5ipe-rtx-sbx.cfapps.us21.hana.ondemand.com/"
+  "https://app-twenty5ipe-gwt-dev.cfapps.us10.hana.ondemand.com"
+  "https://app-twenty5ipe-gwt-nonprod.cfapps.us10.hana.ondemand.com/"
+  "https://app-twenty5ipe-gwt-qa.cfapps.us10.hana.ondemand.com"
+  "https://app-twenty5ipe-kpmg-dev.cfapps.eu20.hana.ondemand.com"
+  "https://app-twenty5ipe-kpmg-uk-qa.cfapps.eu20.hana.ondemand.com"
+  "https://app-twenty5ipe-kpmg-uk-uat.cfapps.eu20.hana.ondemand.com"
+  "https://app-twenty5ipe-sbx24.cfapps.eu20.hana.ondemand.com"
+  "https://app-twenty5ipe-accenture-dev.cfapps.us21.hana.ondemand.com"
+  "https://app-twenty5ipe-sstl-dev.cfapps.eu10-004.hana.ondemand.com/"
+  "https://app-twenty5ipe-sstl-qa.cfapps.eu10-004.hana.ondemand.com"
+  "https://app-twenty5ipe-tetra-pak-pov-sbx.cfapps.eu20.hana.ondemand.com/"
+  "https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com"
+  "https://app-twenty5ipe-mbda-poc.cfapps.eu20-001.hana.ondemand.com"
+  "https://app-twenty5ipe-bp-poc.cfapps.eu10-004.hana.ondemand.com"
+  "https://app-twenty5ipe-bp-dev.cfapps.eu10-004.hana.ondemand.com"
+  "https://app-twenty5ipe-be-qa.cfapps.eu10-004.hana.ondemand.com"
+  "https://app-twenty5ipe-be-prod.cfapps.eu10-004.hana.ondemand.com"
+  "https://approuter-twenty5ipe.cfapps.us20.hana.ondemand.com/#quotes"
+  "https://app-twenty5ipe-pg-dev23.cfapps.us20.hana.ondemand.com"
+  "https://approuter-twenty5ipe-qa.cfapps.us20.hana.ondemand.com/#quotes"
+  "https://app-twenty5ipe-aiquilla.cfapps.us21.hana.ondemand.com"
+  "https://approuter-twenty5ipe-internal-quotes.cfapps.us10.hana.ondemand.com/"
+  "https://developer.salesforce.com"
+)
 
 log() {
   printf '\n==> %s\n' "$*"
@@ -196,24 +265,132 @@ install_with_npx_skills_if_requested() {
   npx --yes skills add "$REPO_URL" --skill "$SKILL_NAME" || warn "npx skills install failed; local Codex copy is already installed."
 }
 
+select_app_url() {
+  if [[ "$SKIP_APP_URL_PROMPT" == "1" ]]; then
+    log "Skipping app URL selection"
+    return
+  fi
+
+  if [[ -n "$APP_URL" ]]; then
+    SELECTED_APP_LABEL="Custom APP_URL"
+    SELECTED_APP_URL="$APP_URL"
+    log "Using APP_URL: $SELECTED_APP_URL"
+    return
+  fi
+
+  local custom_choice skip_choice choice index
+  custom_choice=$((${#APP_LABELS[@]} + 1))
+  skip_choice=$((${#APP_LABELS[@]} + 2))
+
+  printf '\nChoose the base URL to open in Chrome:\n\n'
+  for index in "${!APP_LABELS[@]}"; do
+    printf '%2d) %-34s %s\n' "$((index + 1))" "${APP_LABELS[$index]}" "${APP_URLS[$index]}"
+  done
+  printf '%2d) Enter custom URL\n' "$custom_choice"
+  printf '%2d) Skip opening app URL\n' "$skip_choice"
+
+  while true; do
+    if [[ -n "$APP_CHOICE" ]]; then
+      choice="$APP_CHOICE"
+      printf '\nUsing APP_CHOICE=%s\n' "$choice"
+    else
+      printf '\nSelection [1]: '
+      read -r choice
+      choice="${choice:-1}"
+    fi
+
+    if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
+      warn "Enter a number from the list."
+      APP_CHOICE=""
+      continue
+    fi
+
+    if [[ "$choice" -ge 1 && "$choice" -le "${#APP_LABELS[@]}" ]]; then
+      index=$((choice - 1))
+      SELECTED_APP_LABEL="${APP_LABELS[$index]}"
+      SELECTED_APP_URL="${APP_URLS[$index]}"
+      log "Selected $SELECTED_APP_LABEL"
+      return
+    fi
+
+    if [[ "$choice" -eq "$custom_choice" ]]; then
+      printf 'Enter custom URL: '
+      read -r SELECTED_APP_URL
+      [[ "$SELECTED_APP_URL" =~ ^https?:// ]] || die "Custom URL must start with http:// or https://"
+      SELECTED_APP_LABEL="Custom URL"
+      return
+    fi
+
+    if [[ "$choice" -eq "$skip_choice" ]]; then
+      log "No app URL will be opened"
+      return
+    fi
+
+    warn "Enter a number from the list."
+    APP_CHOICE=""
+  done
+}
+
+wait_for_chrome_debug_port() {
+  local attempt
+  for attempt in {1..30}; do
+    if lsof -nP -iTCP:"$CHROME_DEBUG_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.5
+  done
+  return 1
+}
+
+open_app_url_in_debug_chrome() {
+  [[ -n "$SELECTED_APP_URL" ]] || return
+
+  log "Opening $SELECTED_APP_LABEL in Chrome"
+  local encoded_url
+  encoded_url="$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SELECTED_APP_URL")"
+
+  if curl -fsS -X PUT "http://127.0.0.1:${CHROME_DEBUG_PORT}/json/new?${encoded_url}" >/dev/null 2>&1; then
+    return
+  fi
+
+  warn "Could not open URL through Chrome debug endpoint; opening through macOS instead."
+  open -a "Google Chrome" "$SELECTED_APP_URL"
+}
+
 start_debug_chrome() {
   mkdir -p "$CHROME_PROFILE"
 
   if lsof -nP -iTCP:"$CHROME_DEBUG_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     log "Chrome debug port $CHROME_DEBUG_PORT is already listening"
+    open_app_url_in_debug_chrome
     return
   fi
 
   log "Starting Chrome on debug port $CHROME_DEBUG_PORT"
-  open -na "Google Chrome" --args \
-    --remote-debugging-port="$CHROME_DEBUG_PORT" \
+  local chrome_args=(
+    --remote-debugging-port="$CHROME_DEBUG_PORT"
     --user-data-dir="$CHROME_PROFILE"
+  )
+
+  if [[ -n "$SELECTED_APP_URL" ]]; then
+    chrome_args+=("$SELECTED_APP_URL")
+  fi
+
+  open -na "Google Chrome" --args "${chrome_args[@]}"
+
+  if ! wait_for_chrome_debug_port; then
+    warn "Chrome started, but debug port $CHROME_DEBUG_PORT was not detected yet."
+  fi
 }
 
 print_next_prompt() {
   cat <<EOF
 
 Setup complete.
+
+Selected app:
+${SELECTED_APP_LABEL:-none}
+${SELECTED_APP_URL:-no URL opened}
 
 In the Chrome window that opened:
 1. Log in to the target application manually.
@@ -257,6 +434,7 @@ main() {
   clone_or_update_workspace
   install_codex_skill_copy
   install_with_npx_skills_if_requested
+  select_app_url
   start_debug_chrome
   print_next_prompt
   open_claude_code
