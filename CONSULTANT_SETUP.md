@@ -65,12 +65,27 @@ The script checks or installs:
 - Google Chrome
 - Claude Code
 
-It then clones this repo to `~/SkillAutomation`, installs the Codex skill copy, asks the consultant to choose a customer base URL, starts Chrome with remote debugging on port `9222`, opens the selected URL, and launches `claude` in the workspace.
+It then asks which workspace path to use, asks whether to open Claude Code or Codex, clones/updates this repo, installs the Codex skill copy, asks the consultant to choose a customer base URL, starts Chrome with remote debugging on port `9222`, opens the selected URL, and launches the selected AI agent in the workspace.
 
 Override defaults like this:
 
 ```bash
 WORKSPACE_DIR="$HOME/Work/SkillAutomation" \
+AI_AGENT=codex \
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+Agent options:
+
+```bash
+AI_AGENT=claude   # open Claude Code
+AI_AGENT=codex    # open Codex if installed
+AI_AGENT=none     # do not open an AI agent
+```
+
+For backward compatibility, `OPEN_CLAUDE=0` still skips agent opening:
+
+```bash
 OPEN_CLAUDE=0 \
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
@@ -95,6 +110,13 @@ Skip opening an app URL:
 SKIP_APP_URL_PROMPT=1 \
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
+
+Second run behavior:
+
+- Already-installed tools are detected and skipped.
+- Existing workspace is updated with `git pull --ff-only`.
+- Existing skill copy is refreshed from the workspace.
+- Existing Chrome debug session is reused when port `9222` is already open.
 
 To also try the `npx skills add` installer:
 

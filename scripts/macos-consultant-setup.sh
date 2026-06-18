@@ -2,17 +2,21 @@
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/SuketTwenty5/SkillAutomation.git}"
+WORKSPACE_DIR_FROM_ENV="${WORKSPACE_DIR+x}"
 WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/SkillAutomation}"
 SKILL_NAME="${SKILL_NAME:-selenium-automation}"
 CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
 CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
 OPEN_CLAUDE="${OPEN_CLAUDE:-1}"
+OPEN_AGENT="${OPEN_AGENT:-$OPEN_CLAUDE}"
+AI_AGENT="${AI_AGENT:-}"
 RUN_NPX_SKILLS="${RUN_NPX_SKILLS:-0}"
 APP_URL="${APP_URL:-}"
 APP_CHOICE="${APP_CHOICE:-}"
 SKIP_APP_URL_PROMPT="${SKIP_APP_URL_PROMPT:-0}"
 SELECTED_APP_LABEL=""
 SELECTED_APP_URL=""
+SELECTED_AI_AGENT=""
 
 APP_LABELS=(
   "Twenty5 Internal (BTP Golden)"
@@ -95,8 +99,99 @@ have() {
   command -v "$1" >/dev/null 2>&1
 }
 
+is_interactive() {
+  [[ -t 0 && -t 1 ]]
+}
+
+normalize_agent() {
+  case "$1" in
+    claude|Claude|CLAUDE|claude-code|Claude-Code|CLAUDE-CODE)
+      printf 'claude'
+      ;;
+    codex|Codex|CODEX|openai-codex|OpenAI-Codex)
+      printf 'codex'
+      ;;
+    none|no|skip|off|0)
+      printf 'none'
+      ;;
+    *)
+      printf ''
+      ;;
+  esac
+}
+
 ensure_macos() {
   [[ "$(uname -s)" == "Darwin" ]] || die "This setup script is for macOS only."
+}
+
+select_workspace_dir() {
+  if [[ -n "$WORKSPACE_DIR_FROM_ENV" ]]; then
+    log "Using WORKSPACE_DIR from environment: $WORKSPACE_DIR"
+    return
+  fi
+
+  if ! is_interactive; then
+    log "Using default workspace: $WORKSPACE_DIR"
+    return
+  fi
+
+  printf '\nWorkspace to clone/open [%s]: ' "$WORKSPACE_DIR"
+  local chosen_workspace
+  read -r chosen_workspace
+  if [[ -n "$chosen_workspace" ]]; then
+    WORKSPACE_DIR="${chosen_workspace/#\~/$HOME}"
+  fi
+  log "Workspace: $WORKSPACE_DIR"
+}
+
+select_ai_agent() {
+  if [[ "$OPEN_AGENT" == "0" ]]; then
+    SELECTED_AI_AGENT="none"
+    log "Skipping AI agent launch"
+    return
+  fi
+
+  if [[ -n "$AI_AGENT" ]]; then
+    SELECTED_AI_AGENT="$(normalize_agent "$AI_AGENT")"
+    [[ -n "$SELECTED_AI_AGENT" ]] || die "AI_AGENT must be claude, codex, or none."
+    log "Using AI_AGENT=$SELECTED_AI_AGENT"
+    return
+  fi
+
+  if ! is_interactive; then
+    SELECTED_AI_AGENT="claude"
+    log "Using default AI agent: Claude Code"
+    return
+  fi
+
+  printf '\nWhich AI agent should open this workspace?\n\n'
+  printf '1) Claude Code\n'
+  printf '2) Codex\n'
+  printf '3) Do not open an agent\n'
+
+  local choice
+  while true; do
+    printf '\nSelection [1]: '
+    read -r choice
+    choice="${choice:-1}"
+    case "$choice" in
+      1)
+        SELECTED_AI_AGENT="claude"
+        ;;
+      2)
+        SELECTED_AI_AGENT="codex"
+        ;;
+      3)
+        SELECTED_AI_AGENT="none"
+        ;;
+      *)
+        warn "Enter 1, 2, or 3."
+        continue
+        ;;
+    esac
+    log "Selected AI agent: $SELECTED_AI_AGENT"
+    return
+  done
 }
 
 ensure_xcode_cli_tools() {
@@ -229,6 +324,38 @@ ensure_claude_code() {
   fi
 
   have claude || die "Claude Code installation completed, but 'claude' is not on PATH. Open a new terminal and rerun this script."
+}
+
+ensure_codex_available() {
+  if have codex; then
+    log "Codex CLI found: $(codex --version 2>/dev/null || printf 'installed')"
+    return
+  fi
+
+  if [[ -d "/Applications/Codex.app" ]]; then
+    log "Codex desktop app found"
+    return
+  fi
+
+  warn "Codex was selected but no 'codex' command or /Applications/Codex.app was found."
+  warn "Install/open Codex manually, or rerun with AI_AGENT=claude."
+}
+
+ensure_selected_agent() {
+  case "$SELECTED_AI_AGENT" in
+    claude)
+      ensure_claude_code
+      ;;
+    codex)
+      ensure_codex_available
+      ;;
+    none)
+      log "No AI agent install/check requested"
+      ;;
+    *)
+      die "No AI agent selected"
+      ;;
+  esac
 }
 
 clone_or_update_workspace() {
@@ -396,7 +523,7 @@ In the Chrome window that opened:
 1. Log in to the target application manually.
 2. Keep that Chrome window open.
 
-In Claude Code, paste:
+In the selected AI agent, paste:
 
 Use \$selenium-automation.
 Run this Confluence/manual test in my local Chrome.
@@ -410,18 +537,36 @@ $WORKSPACE_DIR
 EOF
 }
 
-open_claude_code() {
-  if [[ "$OPEN_CLAUDE" != "1" ]]; then
-    return
-  fi
-
-  log "Opening Claude Code in $WORKSPACE_DIR"
-  cd "$WORKSPACE_DIR"
-  exec claude
+open_selected_agent() {
+  case "$SELECTED_AI_AGENT" in
+    claude)
+      log "Opening Claude Code in $WORKSPACE_DIR"
+      cd "$WORKSPACE_DIR"
+      exec claude
+      ;;
+    codex)
+      log "Opening Codex in $WORKSPACE_DIR"
+      cd "$WORKSPACE_DIR"
+      if have codex; then
+        exec codex
+      fi
+      if [[ -d "/Applications/Codex.app" ]]; then
+        open -a "Codex" "$WORKSPACE_DIR"
+        return
+      fi
+      warn "Codex is not installed. Opening the workspace folder instead."
+      open "$WORKSPACE_DIR"
+      ;;
+    none)
+      log "Workspace is ready. No AI agent opened."
+      ;;
+  esac
 }
 
 main() {
   ensure_macos
+  select_workspace_dir
+  select_ai_agent
   ensure_xcode_cli_tools
   ensure_homebrew
   brew_install_formula git
@@ -430,14 +575,14 @@ main() {
   ensure_java17
   ensure_node18
   ensure_chrome
-  ensure_claude_code
+  ensure_selected_agent
   clone_or_update_workspace
   install_codex_skill_copy
   install_with_npx_skills_if_requested
   select_app_url
   start_debug_chrome
   print_next_prompt
-  open_claude_code
+  open_selected_agent
 }
 
 main "$@"

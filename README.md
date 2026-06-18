@@ -56,12 +56,12 @@ They open that folder in Codex/Claude Code, not an empty workspace.
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-This checks/installs prerequisites, clones the workspace to `~/SkillAutomation`, installs the skill copy for Codex, asks the consultant to choose a customer base URL, starts Chrome with remote debugging, opens that URL, and opens Claude Code in the workspace.
+This checks/installs prerequisites, asks which workspace path to use, asks whether to open Claude Code or Codex, clones/updates the workspace, installs the skill copy for Codex, asks the consultant to choose a customer base URL, starts Chrome with remote debugging, opens that URL, and opens the selected AI agent in the workspace.
 
 Useful overrides:
 
 ```bash
-WORKSPACE_DIR="$HOME/Work/SkillAutomation" OPEN_CLAUDE=0 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+WORKSPACE_DIR="$HOME/Work/SkillAutomation" AI_AGENT=codex /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
 Open a specific app URL without the menu:
@@ -69,6 +69,14 @@ Open a specific app URL without the menu:
 ```bash
 APP_URL="https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
+
+Skip opening an AI agent:
+
+```bash
+AI_AGENT=none /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+On second run, installed tools are skipped, the existing workspace is pulled, the skill copy is refreshed, and an existing Chrome debug session is reused.
 
 ## Standard Use
 
