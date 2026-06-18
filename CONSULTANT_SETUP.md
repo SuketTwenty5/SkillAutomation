@@ -46,6 +46,42 @@ Use the bundled Twenty5 automation code first.
 <paste test case>
 ```
 
+## One-command macOS setup
+
+Consultants on macOS can use the bootstrap script:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+The script checks or installs:
+
+- Xcode Command Line Tools
+- Homebrew
+- Git
+- Java 17
+- Maven
+- Node/npm
+- Google Chrome
+- Claude Code
+
+It then clones this repo to `~/SkillAutomation`, installs the Codex skill copy, starts Chrome with remote debugging on port `9222`, and launches `claude` in the workspace.
+
+Override defaults like this:
+
+```bash
+WORKSPACE_DIR="$HOME/Work/SkillAutomation" \
+OPEN_CLAUDE=0 \
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+To also try the `npx skills add` installer:
+
+```bash
+RUN_NPX_SKILLS=1 \
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
 ## Best Packaging Options
 
 Option A: Private runner repo.

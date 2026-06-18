@@ -50,6 +50,20 @@ They open that folder in Codex/Claude Code, not an empty workspace.
 - Codex, Claude Code, or another local agent that can read files and run shell commands
 - This runner workspace, unless they already have the Selenium project
 
+## One-command macOS setup
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+This checks/installs prerequisites, clones the workspace to `~/SkillAutomation`, installs the skill copy for Codex, starts Chrome with remote debugging, and opens Claude Code in the workspace.
+
+Useful overrides:
+
+```bash
+WORKSPACE_DIR="$HOME/Work/SkillAutomation" OPEN_CLAUDE=0 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
 ## Standard Use
 
 1. Open this runner workspace in the local AI coding agent.
