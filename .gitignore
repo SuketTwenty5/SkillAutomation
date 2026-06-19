@@ -6,3 +6,4 @@ test-evidence/
 *.log
 .idea/
 .skillautomation.env
+.skillautomation/

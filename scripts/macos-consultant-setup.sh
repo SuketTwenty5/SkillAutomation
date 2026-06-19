@@ -383,6 +383,7 @@ clone_or_update_workspace() {
   if [[ -d "$WORKSPACE_DIR/.git" ]]; then
     log "Updating existing workspace: $WORKSPACE_DIR"
     remove_known_untracked_transition_files
+    stash_local_tracked_changes_before_update
     git -C "$WORKSPACE_DIR" pull --ff-only
   elif [[ -e "$WORKSPACE_DIR" ]]; then
     die "$WORKSPACE_DIR already exists but is not a Git repo. Set WORKSPACE_DIR to another path."
@@ -390,6 +391,18 @@ clone_or_update_workspace() {
     log "Cloning runner workspace"
     git clone "$REPO_URL" "$WORKSPACE_DIR"
   fi
+}
+
+stash_local_tracked_changes_before_update() {
+  local status stash_message
+  status="$(git -C "$WORKSPACE_DIR" status --porcelain --untracked-files=no)"
+  [[ -n "$status" ]] || return 0
+
+  stash_message="SkillAutomation setup auto-stash before update $(date -u +%Y%m%dT%H%M%SZ)"
+  warn "Local tracked changes found in $WORKSPACE_DIR; stashing them before update."
+  git -C "$WORKSPACE_DIR" stash push -m "$stash_message"
+  warn "Local changes were preserved in git stash: $stash_message"
+  warn "To inspect or restore later: cd \"$WORKSPACE_DIR\" && git stash list && git stash pop"
 }
 
 remove_known_untracked_transition_files() {
