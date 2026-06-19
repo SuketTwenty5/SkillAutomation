@@ -18,17 +18,14 @@ USE_DEBUG_CHROME="${USE_DEBUG_CHROME:-true}"
 LOCAL_RUN="${LOCAL_RUN:-true}"
 DEBUG_HOLD_BROWSER="${DEBUG_HOLD_BROWSER:-true}"
 CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
+METRICS_ENABLED="${METRICS_ENABLED:-false}"
 
 running_inside_codex_sandbox() {
   [[ -n "${CODEX_SANDBOX:-}" || -n "${CODEX_SHELL:-}" ]]
 }
 
 if [[ -z "${AUTO_START_CHROME+x}" ]]; then
-  if running_inside_codex_sandbox; then
-    AUTO_START_CHROME="false"
-  else
-    AUTO_START_CHROME="true"
-  fi
+  AUTO_START_CHROME="true"
 fi
 
 usage() {
@@ -44,8 +41,9 @@ Environment:
   LOCAL_RUN           Pass -Dlocal.run=true. Default true.
   DEBUG_HOLD_BROWSER  Pass -Ddebug=true. Default true when USE_DEBUG_CHROME=true.
   AUTO_START_CHROME   Start Chrome debug profile if port is not listening. Default true.
-                      Inside Codex sandbox, default false to avoid GUI approval prompts.
+                      Set to false to require a manually started debug browser.
   CHROME_PROFILE      Chrome profile used for Selenium attachment.
+  METRICS_ENABLED     Enable InfluxDB writes. Default false for local runner.
 EOF
 }
 
@@ -129,6 +127,7 @@ MVN_ARGS=(
   "-Dcucumber.filter.tags=$CUCUMBER_TAGS"
   "-Denv=$APP_URL"
   "-Dlocal.run=$LOCAL_RUN"
+  "-Dmetrics.enabled=$METRICS_ENABLED"
 )
 
 if [[ "$USE_DEBUG_CHROME" == "true" && "$DEBUG_HOLD_BROWSER" == "true" ]]; then

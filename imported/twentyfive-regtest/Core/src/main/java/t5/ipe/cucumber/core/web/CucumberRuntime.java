@@ -150,6 +150,19 @@ public class CucumberRuntime {
         this.influxDBClient = influxDBClient;
     }
 
+    public static boolean isMetricsEnabled() {
+        String configured = System.getProperty("metrics.enabled");
+        if (configured != null) {
+            return Boolean.parseBoolean(configured);
+        }
+
+        if (Boolean.parseBoolean(System.getProperty("local.run", "false"))) {
+            return false;
+        }
+
+        return !TOKEN.isEmpty();
+    }
+
     private String getFeatureFileNameFromScenarioId(Scenario scenario) {
         String uri = scenario.getUri().toString();
         String featureFileNameWithExtension = uri.substring(uri.lastIndexOf("/") + 1);
@@ -253,8 +266,13 @@ public class CucumberRuntime {
         String testName = "Test Initialization";
         String browser = System.getProperty("browser", "chrome").toLowerCase();
         String os = System.getProperty("os.name");
-        InfluxDBClient client = InfluxDBClientFactory.create(URL, TOKEN.toCharArray(), ORG, BUCKET);
-        CucumberRuntime.getInstance().setInfluxDBClient(client);
+        if (isMetricsEnabled()) {
+            InfluxDBClient client = InfluxDBClientFactory.create(URL, TOKEN.toCharArray(), ORG, BUCKET);
+            CucumberRuntime.getInstance().setInfluxDBClient(client);
+        } else {
+            CucumberRuntime.getInstance().setInfluxDBClient(null);
+            System.out.println("[INFLUX DB] Metrics disabled for this run.");
+        }
         ScenarioMetrics metrics = new ScenarioMetrics(jobName, scenarioName, testName, browser, os);
         CucumberRuntime.getInstance().setMetrics(metrics);
         System.out.println("Test Initialization started at: " + metrics.getStartTime());
@@ -327,26 +345,29 @@ public class CucumberRuntime {
         long endTime = System.currentTimeMillis();
         String status = scenario.getStatus().name();
 
-        // Build point
-        Point point = metrics.buildPoint(endTime, status);
+        if (isMetricsEnabled() && client != null && metrics != null) {
+            Point point = metrics.buildPoint(endTime, status);
 
-        // Configure async write options
-        WriteOptions writeOptions = WriteOptions.builder()
-                .batchSize(500)         // Number of points per batch
-                .flushInterval(5000)    // Flush every 5 seconds
-                .retryInterval(5000)    // Retry interval for failed writes
-                .build();
+            WriteOptions writeOptions = WriteOptions.builder()
+                    .batchSize(500)
+                    .flushInterval(5000)
+                    .retryInterval(5000)
+                    .build();
 
-        // Create the WriteApi (async, non-blocking)
-        try (WriteApi writeApi = client.getWriteApi(writeOptions)) {
-            writeApi.writePoint(BUCKET, ORG, point);
-            // Optional: flush immediately if needed
-            writeApi.flush();
-        } catch (Exception e) {
-            System.err.println("InfluxDB write failed: " + e.getMessage());
-        }
-        if (client != null) {
-            client.close();
+            try (WriteApi writeApi = client.getWriteApi(writeOptions)) {
+                writeApi.writePoint(BUCKET, ORG, point);
+                writeApi.flush();
+            } catch (Throwable t) {
+                System.err.println("InfluxDB write failed: " + t.getMessage());
+            }
+
+            try {
+                client.close();
+            } catch (Throwable t) {
+                System.err.println("InfluxDB close failed: " + t.getMessage());
+            }
+        } else {
+            System.out.println("[INFLUX DB] Metrics disabled; skipping scenario write.");
         }
         System.out.println("Scenario ended at: " + endTime);
         System.out.println("Previous test duration (ms): " + (endTime - metrics.getStartTime()));

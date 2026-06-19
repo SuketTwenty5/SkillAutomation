@@ -152,19 +152,21 @@ public class UtilSteps {
         // Build point and write to InfluxDB
         ScenarioMetrics metrics = CucumberRuntime.getInstance().getMetrics();
         InfluxDBClient influxDBClient = CucumberRuntime.getInstance().getInfluxDBClient();
-        Point point = metrics.buildPoint(endTime, status);
-        // Configure async write options
-        WriteOptions writeOptions = WriteOptions.builder()
-                .batchSize(500)         // Number of points per batch
-                .flushInterval(5000)    // Flush every 5 seconds
-                .retryInterval(5000)    // Retry interval for failed writes
-                .build();
+        if (CucumberRuntime.isMetricsEnabled() && influxDBClient != null && metrics != null) {
+            Point point = metrics.buildPoint(endTime, status);
+            WriteOptions writeOptions = WriteOptions.builder()
+                    .batchSize(500)
+                    .flushInterval(5000)
+                    .retryInterval(5000)
+                    .build();
 
-        // Create the WriteApi (async, non-blocking)
-        try (WriteApi writeApi = influxDBClient.getWriteApi(writeOptions)) {
-            writeApi.writePoint(BUCKET, ORG, point);
-        } catch (Exception e) {
-            System.err.println("InfluxDB write failed: " + e.getMessage());
+            try (WriteApi writeApi = influxDBClient.getWriteApi(writeOptions)) {
+                writeApi.writePoint(BUCKET, ORG, point);
+            } catch (Throwable t) {
+                System.err.println("InfluxDB write failed: " + t.getMessage());
+            }
+        } else {
+            System.out.println("[INFLUX DB] Metrics disabled; skipping step write.");
         }
         CucumberRuntime.getInstance().setInfluxDBClient(influxDBClient);
         System.out.println("Previous Step ended at: " + endTime);

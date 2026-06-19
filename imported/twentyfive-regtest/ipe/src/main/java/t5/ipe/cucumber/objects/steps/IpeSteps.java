@@ -87,6 +87,9 @@ public class IpeSteps {
     String ENTER_CODE_TEXT = "//*[text()='Enter code']";
     String SIGN_IN_TEXT = "//title[text()='Sign In']";
     String ENTER_PASSWORD_TEXT = "//*[@id='j_password-label']";
+    String APP_TITLE_TOOLBAR = "//div[contains(@class, 'x-PricingAppNavTitleToolbar')]";
+    String APP_TOP_MENU_BUTTON = "//a[@aria-hidden='false' and contains(@class,'ibeTopMenuButton')]";
+    String PROPOSALS_TAB = "//a//span[contains(translate(normalize-space(.), 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'PROPOSALS')]";
     String PG_USERNAME_INPUT = "//*[@name='pf.username']";
     String PG_PASSWORD_INPUT = "//*[@type='password']";
     String PG_SIGN_ON_BUTTON = "//*[@class='ping-button normal allow']";
@@ -103,6 +106,12 @@ public class IpeSteps {
 
     private Set<String> existingHandles = new HashSet<>();
 
+    private enum LoginReadiness {
+        SIGNED_IN,
+        LOGIN_FORM,
+        UNKNOWN
+    }
+
     public void performOnlyOnWindows(Runnable action) {
         if (isWindows()) {
             action.run();
@@ -116,14 +125,18 @@ public class IpeSteps {
     @And("^(?:I |)perform login$")
     public void performLogin() {
         setCustomTimeoutSec(60);
+        if (skipLoginIfAlreadySignedIn()) {
+            return;
+        }
+
         //User information is retrieved for the specified login from the IpeUserRepository repository.
         IpeUser user = IpeUserRepository.getUserInfo();
         if (System.getProperty("auth.method") == null || System.getProperty("auth.method").equalsIgnoreCase(IpeLoginFormType.SAPID.toString())) {
 //            if ($x(DEFAULT_IDENTITY_PROVIDER).shouldBe(visible, Duration.ofSeconds(30)).exists()) {
 //                $x(DEFAULT_IDENTITY_PROVIDER).click();
 //            }
-            $x(LOGIN_WIDGET_T5).should(Condition.visible);
-            $x(USERNAME_INPUT_T5).should(Condition.visible, Duration.ofSeconds(25)).setValue(user.getLogin());
+            clickIfVisible(DEFAULT_IDENTITY_PROVIDER, "Default Identity Provider");
+            $x(USERNAME_INPUT_T5).should(Condition.visible, Duration.ofSeconds(45)).setValue(user.getLogin());
             Selenide.sleep(700);
             $x(Continue_Button_T5).should(Condition.visible, Duration.ofSeconds(5)).click();
             Selenide.sleep(700);
@@ -139,6 +152,7 @@ public class IpeSteps {
             Selenide.sleep(700);
             $x(SIGN_IN_BUTTON_T5).shouldBe(enabled).click();
             Selenide.sleep(700);
+            waitForSignedInApp(Duration.ofSeconds(60), "after login");
             saveScreenshot();
         } else {
             System.out.println("Authentication method not found: " + System.getProperty("auth.method"));
@@ -148,14 +162,15 @@ public class IpeSteps {
     @And("^(?:I |)perform Mfg 2.4 login$")
     public void mfg24PerformLogin() {
         setCustomTimeoutSec(60);
+        if (skipLoginIfAlreadySignedIn()) {
+            return;
+        }
+
         //User information is retrieved for the specified login from the IpeUserRepository repository.
         IpeUser user = IpeUserRepository.getUserInfo();
         if (System.getProperty("auth.method") == null || System.getProperty("auth.method").equalsIgnoreCase(IpeLoginFormType.SAPID.toString())) {
-            if ($x(DEFAULT_IDENTITY_PROVIDER).shouldBe(visible, Duration.ofSeconds(30)).exists()) {
-                $x(DEFAULT_IDENTITY_PROVIDER).click();
-            }
-            $x(LOGIN_WIDGET_T5).should(Condition.visible);
-            $x(USERNAME_INPUT_T5).should(Condition.visible, Duration.ofSeconds(25)).setValue(user.getLogin());
+            clickIfVisible(DEFAULT_IDENTITY_PROVIDER, "Default Identity Provider");
+            $x(USERNAME_INPUT_T5).should(Condition.visible, Duration.ofSeconds(45)).setValue(user.getLogin());
             Selenide.sleep(700);
             $x(Continue_Button_T5).should(Condition.visible, Duration.ofSeconds(5)).click();
             Selenide.sleep(700);
@@ -171,6 +186,7 @@ public class IpeSteps {
             Selenide.sleep(700);
             $x(SIGN_IN_BUTTON_T5).shouldBe(enabled).click();
             Selenide.sleep(700);
+            waitForSignedInApp(Duration.ofSeconds(60), "after Mfg 2.4 login");
             saveScreenshot();
         } else {
             System.out.println("Authentication method not found: " + System.getProperty("auth.method"));
@@ -180,6 +196,10 @@ public class IpeSteps {
     @And("^(?:I |)perform PG login$")
     public void performPgLogin() {
         setCustomTimeoutSec(60);
+        if (skipLoginIfAlreadySignedIn()) {
+            return;
+        }
+
         IpeUser user = IpeUserRepository.getUserInfo();
 
         $x(PG_USERNAME_INPUT).shouldBe(visible, Duration.ofSeconds(45)).setValue(user.getLogin());
@@ -188,7 +208,90 @@ public class IpeSteps {
         Selenide.sleep(700);
         $x(PG_SIGN_ON_BUTTON).shouldBe(enabled, Duration.ofSeconds(20)).click();
         Selenide.sleep(30000);
+        waitForSignedInApp(Duration.ofSeconds(60), "after PG login");
         saveScreenshot();
+    }
+
+    private boolean skipLoginIfAlreadySignedIn() {
+        String currentUrl = WebDriverRunner.url();
+        AllureUtils.logActionF("Checking existing signed-in session. Current URL: %s", currentUrl);
+
+        if (waitForLoginReadiness(Duration.ofSeconds(60), "before login") == LoginReadiness.SIGNED_IN) {
+            AllureUtils.logActionF("Existing signed-in session detected. Skipping login.");
+            saveScreenshot();
+            return true;
+        }
+
+        AllureUtils.logActionF("Existing signed-in session not detected. Login will continue. Current URL: %s", WebDriverRunner.url());
+        return false;
+    }
+
+    private void waitForSignedInApp(Duration timeout, String phase) {
+        LoginReadiness readiness = waitForLoginReadiness(timeout, phase);
+        if (readiness == LoginReadiness.SIGNED_IN) {
+            AllureUtils.logActionF("Signed-in app shell detected %s. Current URL: %s", phase, WebDriverRunner.url());
+            return;
+        }
+
+        AllureUtils.logActionF("Signed-in app shell was not detected %s. Current URL: %s", phase, WebDriverRunner.url());
+    }
+
+    private LoginReadiness waitForLoginReadiness(Duration timeout, String phase) {
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+        while (System.currentTimeMillis() <= deadline) {
+            try {
+                if (isSignedInAppVisible()) {
+                    AllureUtils.logActionF("Signed-in app shell detected %s. Current URL: %s", phase, WebDriverRunner.url());
+                    return LoginReadiness.SIGNED_IN;
+                }
+
+                if (isLoginPageVisible()) {
+                    AllureUtils.logActionF("Login page detected %s. Current URL: %s", phase, WebDriverRunner.url());
+                    return LoginReadiness.LOGIN_FORM;
+                }
+            } catch (RuntimeException e) {
+                AllureUtils.logActionF("Login readiness check still waiting %s: %s", phase, e.getMessage());
+            }
+
+            Selenide.sleep(500);
+        }
+
+        return LoginReadiness.UNKNOWN;
+    }
+
+    private boolean isSignedInAppVisible() {
+        return firstVisibleElement(APP_TITLE_TOOLBAR) != null
+                || firstVisibleElement(APP_TOP_MENU_BUTTON) != null
+                || firstVisibleElement(PROPOSALS_TAB) != null;
+    }
+
+    private boolean clickIfVisible(String xpath, String label) {
+        SelenideElement element = firstVisibleElement(xpath);
+        if (element == null) {
+            return false;
+        }
+
+        AllureUtils.logActionF("%s is visible. Clicking it before continuing.", label);
+        element.shouldBe(enabled, Duration.ofSeconds(5)).click();
+        Selenide.sleep(700);
+        return true;
+    }
+
+    private boolean isLoginPageVisible() {
+        return firstVisibleElement(LOGIN_WIDGET_T5) != null
+                || firstVisibleElement(USERNAME_INPUT_T5) != null
+                || firstVisibleElement(PASSWORD_INPUT_T5) != null
+                || firstVisibleElement(PG_USERNAME_INPUT) != null
+                || firstVisibleElement(PG_PASSWORD_INPUT) != null
+                || firstVisibleElement(DEFAULT_IDENTITY_PROVIDER) != null;
+    }
+
+    private SelenideElement firstVisibleElement(String xpath) {
+        ElementsCollection visibleElements = $$x(xpath).filter(visible);
+        if (visibleElements.isEmpty()) {
+            return null;
+        }
+        return visibleElements.first();
     }
 
     @And("I verify current page URL contains {string}")
