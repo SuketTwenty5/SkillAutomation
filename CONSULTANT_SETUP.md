@@ -64,8 +64,9 @@ The script checks or installs:
 - Node/npm
 - Google Chrome
 - Claude Code
+- Claude for Desktop, when selected
 
-It then asks which workspace path to use, asks whether to open Claude Code or Codex, clones/updates this repo, installs the Codex skill copy, asks the consultant to choose a customer base URL, starts Chrome with remote debugging on port `9222`, opens the selected URL, and launches the selected AI agent in the workspace.
+It then asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates this repo, installs the Codex skill copy, asks the consultant to choose a customer base URL, starts Chrome with remote debugging on port `9222`, opens the selected URL, and launches the selected AI agent in the workspace.
 
 Override defaults like this:
 
@@ -78,10 +79,13 @@ AI_AGENT=codex \
 Agent options:
 
 ```bash
-AI_AGENT=claude   # open Claude Code
-AI_AGENT=codex    # open Codex if installed
-AI_AGENT=none     # do not open an AI agent
+AI_AGENT=claude           # open Claude Code
+AI_AGENT=claude-desktop   # open Claude for Desktop
+AI_AGENT=codex            # open Codex if installed
+AI_AGENT=none             # do not open an AI agent
 ```
+
+When `AI_AGENT=claude-desktop` is selected, the setup also writes `.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md` in the workspace and copies a starter prompt to the clipboard. Paste that prompt into Claude Desktop, then paste the Confluence/manual test case below it. This gives Claude the exact app URL and tells it to use `.skillautomation.env` and `scripts/run-twentyfive-test.sh` instead of trying to infer the URL from Chrome settings.
 
 For backward compatibility, `OPEN_CLAUDE=0` still skips agent opening:
 

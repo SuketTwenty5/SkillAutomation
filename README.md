@@ -47,7 +47,7 @@ They open that folder in Codex/Claude Code, not an empty workspace.
 - Chrome installed locally
 - ChromeDriver available through Selenium Manager or project dependency setup
 - Access to the target application and Confluence/test content
-- Codex, Claude Code, or another local agent that can read files and run shell commands
+- Codex, Claude Code, Claude for Desktop, or another local agent that can read files and run shell commands
 - This runner workspace, unless they already have the Selenium project
 
 ## One-command macOS setup
@@ -56,13 +56,21 @@ They open that folder in Codex/Claude Code, not an empty workspace.
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-This checks/installs prerequisites, asks which workspace path to use, asks whether to open Claude Code or Codex, clones/updates the workspace, installs the skill copy for Codex, asks the consultant to choose a customer base URL, starts Chrome with remote debugging, opens that URL, and opens the selected AI agent in the workspace.
+This checks/installs prerequisites, asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates the workspace, installs the skill copy for Codex, asks the consultant to choose a customer base URL, starts Chrome with remote debugging, opens that URL, and opens the selected AI agent in the workspace.
 
 Useful overrides:
 
 ```bash
 WORKSPACE_DIR="$HOME/Work/SkillAutomation" AI_AGENT=codex /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
+
+For consultants who already use Claude for Desktop:
+
+```bash
+AI_AGENT=claude-desktop /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
+```
+
+This also creates `.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md` in the workspace and copies a starter prompt to the clipboard, so Claude Desktop gets the exact app URL and runner command instead of trying to infer the URL from Chrome.
 
 Open a specific app URL without the menu:
 
@@ -123,4 +131,4 @@ The agent should extract the test, map steps to existing Selenium/Selenide code,
 
 ## What This Does Not Do
 
-The skill does not magically give a cloud chatbot control over Chrome. Execution must happen in a local agent/runtime on the consultant machine, such as Codex desktop/CLI or Claude Code.
+The skill does not magically give a cloud chatbot control over Chrome. Execution must happen in a local agent/runtime on the consultant machine, such as Codex desktop/CLI, Claude Code, or Claude for Desktop.

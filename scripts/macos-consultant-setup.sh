@@ -18,6 +18,7 @@ SELECTED_APP_LABEL=""
 SELECTED_APP_URL=""
 SELECTED_AI_AGENT=""
 WORKSPACE_ENV_FILE=""
+CLAUDE_DESKTOP_PROMPT_FILE=""
 
 APP_LABELS=(
   "Twenty5 Internal (BTP Golden)"
@@ -109,6 +110,9 @@ normalize_agent() {
     claude|Claude|CLAUDE|claude-code|Claude-Code|CLAUDE-CODE)
       printf 'claude'
       ;;
+    claude-desktop|Claude-Desktop|CLAUDE-DESKTOP|claude_desktop|ClaudeDesktop|claude-app|Claude-App)
+      printf 'claude-desktop'
+      ;;
     codex|Codex|CODEX|openai-codex|OpenAI-Codex)
       printf 'codex'
       ;;
@@ -154,7 +158,7 @@ select_ai_agent() {
 
   if [[ -n "$AI_AGENT" ]]; then
     SELECTED_AI_AGENT="$(normalize_agent "$AI_AGENT")"
-    [[ -n "$SELECTED_AI_AGENT" ]] || die "AI_AGENT must be claude, codex, or none."
+    [[ -n "$SELECTED_AI_AGENT" ]] || die "AI_AGENT must be claude, claude-desktop, codex, or none."
     log "Using AI_AGENT=$SELECTED_AI_AGENT"
     return
   fi
@@ -167,8 +171,9 @@ select_ai_agent() {
 
   printf '\nWhich AI agent should open this workspace?\n\n'
   printf '1) Claude Code\n'
-  printf '2) Codex\n'
-  printf '3) Do not open an agent\n'
+  printf '2) Claude for Desktop\n'
+  printf '3) Codex\n'
+  printf '4) Do not open an agent\n'
 
   local choice
   while true; do
@@ -180,13 +185,16 @@ select_ai_agent() {
         SELECTED_AI_AGENT="claude"
         ;;
       2)
-        SELECTED_AI_AGENT="codex"
+        SELECTED_AI_AGENT="claude-desktop"
         ;;
       3)
+        SELECTED_AI_AGENT="codex"
+        ;;
+      4)
         SELECTED_AI_AGENT="none"
         ;;
       *)
-        warn "Enter 1, 2, or 3."
+        warn "Enter 1, 2, 3, or 4."
         continue
         ;;
     esac
@@ -327,6 +335,15 @@ ensure_claude_code() {
   have claude || die "Claude Code installation completed, but 'claude' is not on PATH. Open a new terminal and rerun this script."
 }
 
+ensure_claude_desktop() {
+  if [[ -d "/Applications/Claude.app" ]]; then
+    log "Claude for Desktop found"
+    return
+  fi
+
+  brew_install_cask claude
+}
+
 ensure_codex_available() {
   if have codex; then
     log "Codex CLI found: $(codex --version 2>/dev/null || printf 'installed')"
@@ -339,13 +356,16 @@ ensure_codex_available() {
   fi
 
   warn "Codex was selected but no 'codex' command or /Applications/Codex.app was found."
-  warn "Install/open Codex manually, or rerun with AI_AGENT=claude."
+  warn "Install/open Codex manually, or rerun with AI_AGENT=claude or AI_AGENT=claude-desktop."
 }
 
 ensure_selected_agent() {
   case "$SELECTED_AI_AGENT" in
     claude)
       ensure_claude_code
+      ;;
+    claude-desktop)
+      ensure_claude_desktop
       ;;
     codex)
       ensure_codex_available
@@ -398,6 +418,90 @@ write_workspace_env() {
     printf 'CHROME_DEBUG_PORT=%q\n' "$CHROME_DEBUG_PORT"
     printf 'CHROME_PROFILE=%q\n' "$CHROME_PROFILE"
   } > "$WORKSPACE_ENV_FILE"
+}
+
+write_claude_desktop_handoff() {
+  [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]] || return
+
+  mkdir -p "$WORKSPACE_DIR/.skillautomation"
+  CLAUDE_DESKTOP_PROMPT_FILE="$WORKSPACE_DIR/.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md"
+  log "Writing Claude Desktop handoff: $CLAUDE_DESKTOP_PROMPT_FILE"
+
+  cat > "$CLAUDE_DESKTOP_PROMPT_FILE" <<EOF
+# Claude Desktop Test Runner Handoff
+
+Use this workspace:
+
+\`\`\`text
+$WORKSPACE_DIR
+\`\`\`
+
+The selected app URL is saved in:
+
+\`\`\`text
+$WORKSPACE_ENV_FILE
+\`\`\`
+
+Selected app:
+
+\`\`\`text
+${SELECTED_APP_LABEL:-none}
+${SELECTED_APP_URL:-no URL selected}
+\`\`\`
+
+Chrome is launched with remote debugging on:
+
+\`\`\`text
+127.0.0.1:$CHROME_DEBUG_PORT
+\`\`\`
+
+When I paste a Confluence/manual test case, do not try to detect the URL from browser settings. Use the saved workspace environment file or this exact URL:
+
+\`\`\`text
+${SELECTED_APP_URL:-}
+\`\`\`
+
+Run tests through the repository wrapper:
+
+\`\`\`bash
+cd "$WORKSPACE_DIR"
+scripts/run-twentyfive-test.sh @TC-001
+\`\`\`
+
+If the pasted test case has a different tag, replace \`@TC-001\` with that tag. If there is no tag, inspect the existing feature files and generate only the missing glue needed for the pasted case.
+
+Important:
+
+- Reuse the bundled Twenty5 automation code under \`imported/twentyfive-regtest\`.
+- Attach Selenium to the existing Chrome debug session on \`127.0.0.1:$CHROME_DEBUG_PORT\`.
+- Do not ask me to change Chrome site permissions unless the Selenium run reports a specific browser permission failure.
+- If Chrome is not listening, run:
+
+\`\`\`bash
+open -na "Google Chrome" --args --remote-debugging-port="$CHROME_DEBUG_PORT" --user-data-dir="$CHROME_PROFILE" "${SELECTED_APP_URL:-}"
+\`\`\`
+EOF
+}
+
+copy_claude_desktop_prompt() {
+  [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]] || return
+  have pbcopy || return
+
+  log "Copying Claude Desktop starter prompt to clipboard"
+  pbcopy <<EOF
+Use the local workspace at:
+$WORKSPACE_DIR
+
+Read this handoff file first:
+$CLAUDE_DESKTOP_PROMPT_FILE
+
+The app URL is:
+${SELECTED_APP_URL:-no URL selected}
+
+Run this Confluence/manual test in my local Chrome using the bundled Twenty5 automation code. Use scripts/run-twentyfive-test.sh and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
+
+<paste test case here>
+EOF
 }
 
 install_codex_skill_copy() {
@@ -541,6 +645,29 @@ start_debug_chrome() {
 }
 
 print_next_prompt() {
+  if [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]]; then
+    cat <<EOF
+
+Setup complete.
+
+Selected app:
+${SELECTED_APP_LABEL:-none}
+${SELECTED_APP_URL:-no URL opened}
+
+In the Chrome window that opened:
+1. Log in to the target application manually.
+2. Keep that Chrome window open.
+
+For Claude Desktop:
+1. Paste the starter prompt copied to your clipboard.
+2. Attach or reference this handoff file if Claude asks for context:
+   $CLAUDE_DESKTOP_PROMPT_FILE
+3. Paste the Confluence/manual test case after the prompt.
+
+EOF
+    return
+  fi
+
   cat <<EOF
 
 Setup complete.
@@ -573,6 +700,10 @@ open_selected_agent() {
       log "Opening Claude Code in $WORKSPACE_DIR"
       cd "$WORKSPACE_DIR"
       exec claude
+      ;;
+    claude-desktop)
+      log "Opening Claude for Desktop with $WORKSPACE_DIR"
+      open -a "Claude" "$WORKSPACE_DIR"
       ;;
     codex)
       log "Opening Codex in $WORKSPACE_DIR"
@@ -611,6 +742,8 @@ main() {
   install_with_npx_skills_if_requested
   select_app_url
   write_workspace_env
+  write_claude_desktop_handoff
+  copy_claude_desktop_prompt
   start_debug_chrome
   print_next_prompt
   open_selected_agent
