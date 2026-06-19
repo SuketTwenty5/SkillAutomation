@@ -421,7 +421,7 @@ write_workspace_env() {
 }
 
 write_claude_desktop_handoff() {
-  [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]] || return
+  [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]] || return 0
 
   mkdir -p "$WORKSPACE_DIR/.skillautomation"
   CLAUDE_DESKTOP_PROMPT_FILE="$WORKSPACE_DIR/.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md"
@@ -484,8 +484,8 @@ EOF
 }
 
 copy_claude_desktop_prompt() {
-  [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]] || return
-  have pbcopy || return
+  [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]] || return 0
+  have pbcopy || return 0
 
   log "Copying Claude Desktop starter prompt to clipboard"
   pbcopy <<EOF
@@ -604,7 +604,7 @@ wait_for_chrome_debug_port() {
 }
 
 open_app_url_in_debug_chrome() {
-  [[ -n "$SELECTED_APP_URL" ]] || return
+  [[ -n "$SELECTED_APP_URL" ]] || return 0
 
   log "Opening $SELECTED_APP_LABEL in Chrome"
   local encoded_url
