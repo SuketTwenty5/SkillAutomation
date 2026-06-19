@@ -103,7 +103,13 @@ CUCUMBER_TAGS="@TC-001" \
 scripts/run-twentyfive-test.sh
 ```
 
-The runner automatically starts/reuses the dedicated Chrome debug profile on port `9222` and attaches Selenium to it. In Codex, approve the macOS `open` command the first time Chrome needs to be launched.
+The setup script starts the dedicated Chrome debug profile on port `9222` before opening Codex or Claude. The runner then attaches Selenium to that browser. For Claude Code and normal Terminal runs, the runner can also auto-launch that browser if it was closed. For Codex, restart the dedicated browser from Terminal before running tests if you closed it:
+
+```bash
+scripts/start-debug-chrome.sh "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
+```
+
+This avoids Codex GUI-launch approval prompts during the test run while keeping Claude users on the auto-launch path.
 
 ## Standard Use
 

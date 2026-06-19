@@ -143,13 +143,18 @@ scripts/run-twentyfive-test.sh
 The wrapper:
 
 - reads `.skillautomation.env` from setup
-- starts or reuses Chrome debug port `9222`
+- reuses Chrome debug port `9222`
 - runs the correct Maven reactor command
 - includes `-Dsurefire.failIfNoSpecifiedTests=false`
 - attaches to the existing consultant Chrome when `USE_DEBUG_CHROME=true`
 
+The setup script starts Chrome before opening Codex or Claude. Claude Code and normal Terminal runs can auto-launch Chrome again if it was closed. For Codex, restart it from Terminal before asking the AI agent to run tests:
+
+```bash
+scripts/start-debug-chrome.sh "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
+```
+
 If Codex asks whether to run Maven outside the sandbox, choose **Yes** and allow the same `mvn -pl tests -am test` prefix for future runs.
-If Codex asks whether to open Chrome, choose **Yes** once; after Chrome is listening on `9222`, later runs reuse it.
 
 To also try the `npx skills add` installer:
 

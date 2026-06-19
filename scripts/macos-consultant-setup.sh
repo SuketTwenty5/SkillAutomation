@@ -430,6 +430,11 @@ write_workspace_env() {
     printf 'APP_URL=%q\n' "$SELECTED_APP_URL"
     printf 'CHROME_DEBUG_PORT=%q\n' "$CHROME_DEBUG_PORT"
     printf 'CHROME_PROFILE=%q\n' "$CHROME_PROFILE"
+    if [[ "$SELECTED_AI_AGENT" == "codex" ]]; then
+      printf 'AUTO_START_CHROME=false\n'
+    else
+      printf 'AUTO_START_CHROME=true\n'
+    fi
   } > "$WORKSPACE_ENV_FILE"
 }
 
@@ -488,10 +493,11 @@ Important:
 - Reuse the bundled Twenty5 automation code under \`imported/twentyfive-regtest\`.
 - Attach Selenium to the existing Chrome debug session on \`127.0.0.1:$CHROME_DEBUG_PORT\`.
 - Do not ask me to change Chrome site permissions unless the Selenium run reports a specific browser permission failure.
-- If Chrome is not listening, run:
+- If Chrome is not listening, tell me to start the dedicated browser from Terminal with:
 
 \`\`\`bash
-open -na "Google Chrome" --args --remote-debugging-port="$CHROME_DEBUG_PORT" --user-data-dir="$CHROME_PROFILE" "${SELECTED_APP_URL:-}"
+cd "$WORKSPACE_DIR"
+scripts/start-debug-chrome.sh "${SELECTED_APP_URL:-}"
 \`\`\`
 EOF
 }

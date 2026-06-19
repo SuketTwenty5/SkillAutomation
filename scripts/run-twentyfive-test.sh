@@ -17,8 +17,19 @@ CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
 USE_DEBUG_CHROME="${USE_DEBUG_CHROME:-true}"
 LOCAL_RUN="${LOCAL_RUN:-true}"
 DEBUG_HOLD_BROWSER="${DEBUG_HOLD_BROWSER:-true}"
-AUTO_START_CHROME="${AUTO_START_CHROME:-true}"
 CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
+
+running_inside_codex_sandbox() {
+  [[ -n "${CODEX_SANDBOX:-}" || -n "${CODEX_SHELL:-}" ]]
+}
+
+if [[ -z "${AUTO_START_CHROME+x}" ]]; then
+  if running_inside_codex_sandbox; then
+    AUTO_START_CHROME="false"
+  else
+    AUTO_START_CHROME="true"
+  fi
+fi
 
 usage() {
   cat <<EOF
@@ -33,6 +44,7 @@ Environment:
   LOCAL_RUN           Pass -Dlocal.run=true. Default true.
   DEBUG_HOLD_BROWSER  Pass -Ddebug=true. Default true when USE_DEBUG_CHROME=true.
   AUTO_START_CHROME   Start Chrome debug profile if port is not listening. Default true.
+                      Inside Codex sandbox, default false to avoid GUI approval prompts.
   CHROME_PROFILE      Chrome profile used for Selenium attachment.
 EOF
 }
@@ -92,10 +104,15 @@ if [[ "$USE_DEBUG_CHROME" == "true" ]]; then
     cat >&2 <<EOF
 ERROR: Chrome debug endpoint is not listening on port $CHROME_DEBUG_PORT.
 
-The runner tried to start Chrome automatically. If you are running inside Codex,
-approve the macOS open command when prompted, or run this once from Terminal:
+Start the dedicated Chrome debug browser before running tests from Codex:
 
-  open -na "Google Chrome" --args --remote-debugging-port=$CHROME_DEBUG_PORT --user-data-dir="$CHROME_PROFILE"
+  scripts/start-debug-chrome.sh "$APP_URL"
+
+Then log in to the target app in that Chrome window and rerun this command.
+
+If you are running from Claude Code or a normal Terminal, the wrapper can open Chrome for you with:
+
+  AUTO_START_CHROME=true
 EOF
     exit 3
   fi
