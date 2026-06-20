@@ -134,10 +134,21 @@ if [[ "$USE_DEBUG_CHROME" == "true" && "$DEBUG_HOLD_BROWSER" == "true" ]]; then
   MVN_ARGS+=("-Ddebug=true")
 fi
 
+LOGS_DIR="$REPO_ROOT/reports/logs"
+mkdir -p "$LOGS_DIR"
+LOG_FILE="$LOGS_DIR/mvn_$(date +%Y%m%d_%H%M%S).log"
+
 echo "Running Twenty5 test"
 echo "  root: $TEST_ROOT"
 echo "  url:  $APP_URL"
 echo "  tags: $CUCUMBER_TAGS"
+echo "  log:  $LOG_FILE"
 echo
 
-mvn "${MVN_ARGS[@]}"
+mvn "${MVN_ARGS[@]}" >"$LOG_FILE" 2>&1
+MVN_EXIT=$?
+
+python3 "$SCRIPT_DIR/generate-report.py" \
+  "$TEST_ROOT/tests/target/cucumber-reports/Cucumber.json"
+
+exit $MVN_EXIT
