@@ -125,6 +125,9 @@ public class IpeSteps {
     @And("^(?:I |)perform login$")
     public void performLogin() {
         setCustomTimeoutSec(60);
+        if (waitForManualLoginInLocalRun("login")) {
+            return;
+        }
         if (skipLoginIfAlreadySignedIn()) {
             return;
         }
@@ -162,6 +165,9 @@ public class IpeSteps {
     @And("^(?:I |)perform Mfg 2.4 login$")
     public void mfg24PerformLogin() {
         setCustomTimeoutSec(60);
+        if (waitForManualLoginInLocalRun("Mfg 2.4 login")) {
+            return;
+        }
         if (skipLoginIfAlreadySignedIn()) {
             return;
         }
@@ -196,6 +202,9 @@ public class IpeSteps {
     @And("^(?:I |)perform PG login$")
     public void performPgLogin() {
         setCustomTimeoutSec(60);
+        if (waitForManualLoginInLocalRun("PG login")) {
+            return;
+        }
         if (skipLoginIfAlreadySignedIn()) {
             return;
         }
@@ -210,6 +219,47 @@ public class IpeSteps {
         Selenide.sleep(30000);
         waitForSignedInApp(Duration.ofSeconds(60), "after PG login");
         saveScreenshot();
+    }
+
+    private boolean waitForManualLoginInLocalRun(String phase) {
+        if (!Boolean.parseBoolean(System.getProperty("local.run", "false"))) {
+            return false;
+        }
+
+        LoginReadiness readiness = waitForLoginReadiness(Duration.ofSeconds(30), "before " + phase);
+        if (readiness == LoginReadiness.SIGNED_IN) {
+            AllureUtils.logActionF("Existing signed-in local session detected. Skipping automated %s.", phase);
+            saveScreenshot();
+            return true;
+        }
+
+        AllureUtils.logActionF("Local run requires manual login. Please log in in the Selenium Chrome window.");
+        if (waitForSignedInOnly(Duration.ofSeconds(30), "after manual login prompt")) {
+            AllureUtils.logActionF("Manual login detected. Continuing test without automated credential entry.");
+            saveScreenshot();
+            return true;
+        }
+
+        Assert.fail("Manual login was not detected within 30 seconds. Log in in the Selenium Chrome window and rerun the test.");
+        return true;
+    }
+
+    private boolean waitForSignedInOnly(Duration timeout, String phase) {
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+        while (System.currentTimeMillis() <= deadline) {
+            try {
+                if (isSignedInAppVisible()) {
+                    AllureUtils.logActionF("Signed-in app shell detected %s. Current URL: %s", phase, WebDriverRunner.url());
+                    return true;
+                }
+            } catch (RuntimeException e) {
+                AllureUtils.logActionF("Manual login check still waiting %s: %s", phase, e.getMessage());
+            }
+
+            Selenide.sleep(500);
+        }
+
+        return false;
     }
 
     private boolean skipLoginIfAlreadySignedIn() {
