@@ -70,6 +70,8 @@ APP_URL="<target-url>" CUCUMBER_TAGS="@TC-001" scripts/run-twentyfive-test.sh
 
 If `.skillautomation.env` exists from `scripts/macos-consultant-setup.sh`, omit `APP_URL`; the runner will reuse the selected setup URL. The wrapper already includes `-pl tests -am`, `RunTest`, `surefire.failIfNoSpecifiedTests=false`, and Selenium attach defaults.
 
+When a consultant asks to run a test and does not provide a URL, tell them the run will use the default URL `https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote`. If they provide a different URL in the request, pass it through `APP_URL="<url>"`. Do not ask for URL selection during setup.
+
 Treat every user request to "run a test", "run this script", "execute this manual test", or similar as a Selenium/Twenty5 runner request when this workspace is active. Run `scripts/run-twentyfive-test.sh` and attach to the dedicated Chrome profile already started by `scripts/macos-consultant-setup.sh` or `scripts/start-debug-chrome.sh`. Do not ask the consultant to change Chrome site permissions unless the Selenium run reports a specific browser permission failure. If Chrome debug is not listening, use the wrapper's auto-start path or request permission to run `scripts/start-debug-chrome.sh` before showing setup instructions to the consultant. If Codex asks for approval to run Maven outside the sandbox, request/accept that path rather than switching to a different harness.
 
 Do not spend time recreating optional external integrations removed from the shared runner. `AzureDeploymentChecker` and `TicketHandler` are intentionally local-safe no-op stubs unless the original private implementations are restored.

@@ -11,7 +11,8 @@ if [[ -f "$ENV_FILE" ]]; then
   source "$ENV_FILE"
 fi
 
-APP_URL="${APP_URL:-${SELECTED_APP_URL:-}}"
+DEFAULT_APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
+APP_URL="${APP_URL:-${SELECTED_APP_URL:-$DEFAULT_APP_URL}}"
 CUCUMBER_TAGS="${CUCUMBER_TAGS:-${1:-@TC-001}}"
 CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
 USE_DEBUG_CHROME="${USE_DEBUG_CHROME:-true}"
@@ -35,7 +36,7 @@ Usage:
   scripts/run-twentyfive-test.sh @TC-001
 
 Environment:
-  APP_URL             Target base URL. Defaults to .skillautomation.env from setup.
+  APP_URL             Target base URL. Defaults to $DEFAULT_APP_URL.
   CUCUMBER_TAGS       Cucumber tag filter. Defaults to @TC-001.
   USE_DEBUG_CHROME    true attaches to Chrome on localhost:9222. Default true.
   LOCAL_RUN           Pass -Dlocal.run=true. Default true.
@@ -78,13 +79,6 @@ start_chrome_debug() {
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
-fi
-
-if [[ -z "$APP_URL" ]]; then
-  usage
-  echo
-  echo "ERROR: APP_URL is not set and $ENV_FILE does not contain a selected URL." >&2
-  exit 2
 fi
 
 if [[ ! -d "$TEST_ROOT" ]]; then
@@ -141,6 +135,9 @@ LOG_FILE="$LOGS_DIR/mvn_$(date +%Y%m%d_%H%M%S).log"
 echo "Running Twenty5 test"
 echo "  root: $TEST_ROOT"
 echo "  url:  $APP_URL"
+if [[ "$APP_URL" == "$DEFAULT_APP_URL" ]]; then
+  echo "  url source: default; override with APP_URL=<url> if needed"
+fi
 echo "  tags: $CUCUMBER_TAGS"
 echo "  log:  $LOG_FILE"
 echo

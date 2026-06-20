@@ -14,6 +14,8 @@ RUN_NPX_SKILLS="${RUN_NPX_SKILLS:-0}"
 APP_URL="${APP_URL:-}"
 APP_CHOICE="${APP_CHOICE:-}"
 SKIP_APP_URL_PROMPT="${SKIP_APP_URL_PROMPT:-0}"
+DEFAULT_APP_LABEL="Twenty5 Internal (BTP Golden)"
+DEFAULT_APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
 SELECTED_APP_LABEL=""
 SELECTED_APP_URL=""
 SELECTED_AI_AGENT=""
@@ -542,15 +544,18 @@ install_with_npx_skills_if_requested() {
 }
 
 select_app_url() {
-  if [[ "$SKIP_APP_URL_PROMPT" == "1" ]]; then
-    log "Skipping app URL selection"
-    return
-  fi
-
   if [[ -n "$APP_URL" ]]; then
     SELECTED_APP_LABEL="Custom APP_URL"
     SELECTED_APP_URL="$APP_URL"
     log "Using APP_URL: $SELECTED_APP_URL"
+    return
+  fi
+
+  SELECTED_APP_LABEL="$DEFAULT_APP_LABEL"
+  SELECTED_APP_URL="$DEFAULT_APP_URL"
+  log "Using default app URL: $SELECTED_APP_URL"
+
+  if [[ "$SKIP_APP_URL_PROMPT" == "1" || -z "$APP_CHOICE" ]]; then
     return
   fi
 

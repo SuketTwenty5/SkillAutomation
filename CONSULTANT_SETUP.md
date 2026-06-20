@@ -66,7 +66,7 @@ The script checks or installs:
 - Claude Code
 - Claude for Desktop, when selected
 
-It then asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates this repo, installs the Codex skill copy, asks the consultant to choose a customer base URL, starts Chrome with remote debugging on port `9222`, opens the selected URL, and launches the selected AI agent in the workspace.
+It then asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates this repo, installs the Codex skill copy, starts Chrome with remote debugging on port `9222`, opens the default BTP Golden URL, and launches the selected AI agent in the workspace.
 
 Override defaults like this:
 
@@ -94,24 +94,17 @@ OPEN_CLAUDE=0 \
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-Skip the menu and open one URL directly:
+Override the default app URL:
 
 ```bash
 APP_URL="https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com" \
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-Choose by number without prompting:
+Choose a configured URL by number without prompting:
 
 ```bash
 APP_CHOICE=18 \
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
-```
-
-Skip opening an app URL:
-
-```bash
-SKIP_APP_URL_PROMPT=1 \
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
@@ -121,7 +114,7 @@ Second run behavior:
 - Existing workspace is updated with `git pull --ff-only`.
 - Existing skill copy is refreshed from the workspace.
 - Existing Chrome debug session is reused when port `9222` is already open.
-- The selected app URL is saved to `.skillautomation.env` for later test runs.
+- The default or overridden app URL is saved to `.skillautomation.env` for later test runs.
 
 ## Smooth test execution
 
@@ -132,7 +125,7 @@ cd ~/SkillAutomation
 scripts/run-twentyfive-test.sh @TC-001
 ```
 
-Or specify the URL and tag explicitly:
+The runner defaults to `https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote`. Or specify the URL and tag explicitly:
 
 ```bash
 APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote" \

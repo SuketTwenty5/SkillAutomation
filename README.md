@@ -56,7 +56,7 @@ They open that folder in Codex/Claude Code, not an empty workspace.
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-This checks/installs prerequisites, asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates the workspace, installs the skill copy for Codex, asks the consultant to choose a customer base URL, starts Chrome with remote debugging, opens that URL, and opens the selected AI agent in the workspace.
+This checks/installs prerequisites, asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates the workspace, installs the skill copy for Codex, starts Chrome with remote debugging, opens the default BTP Golden URL, and opens the selected AI agent in the workspace.
 
 Useful overrides:
 
@@ -72,7 +72,7 @@ AI_AGENT=claude-desktop /bin/bash -c "$(curl -fsSL https://raw.githubusercontent
 
 This also creates `.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md` in the workspace and copies a starter prompt to the clipboard, so Claude Desktop gets the exact app URL and runner command instead of trying to infer the URL from Chrome.
 
-Open a specific app URL without the menu:
+Override the default app URL:
 
 ```bash
 APP_URL="https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
@@ -95,7 +95,7 @@ cd ~/SkillAutomation
 scripts/run-twentyfive-test.sh @TC-001
 ```
 
-The setup script saves the selected app URL in `.skillautomation.env`, so the runner can reuse it. You can override it:
+The runner defaults to `https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote`. You can override it:
 
 ```bash
 APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote" \
