@@ -430,11 +430,7 @@ write_workspace_env() {
     printf 'APP_URL=%q\n' "$SELECTED_APP_URL"
     printf 'CHROME_DEBUG_PORT=%q\n' "$CHROME_DEBUG_PORT"
     printf 'CHROME_PROFILE=%q\n' "$CHROME_PROFILE"
-    if [[ "$SELECTED_AI_AGENT" == "codex" ]]; then
-      printf 'AUTO_START_CHROME=false\n'
-    else
-      printf 'AUTO_START_CHROME=true\n'
-    fi
+    printf 'AUTO_START_CHROME=true\n'
   } > "$WORKSPACE_ENV_FILE"
 }
 
