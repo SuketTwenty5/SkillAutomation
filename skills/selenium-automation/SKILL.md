@@ -84,6 +84,14 @@ When a consultant asks to run a test and does not provide a URL, tell them the r
 
 Treat every user request to "run a test", "run this script", "execute this manual test", or similar as a Selenium/Twenty5 runner request when this workspace is active. Run `scripts/run-twentyfive-test.sh` and attach to the dedicated Chrome profile already started by `scripts/macos-consultant-setup.sh` or `scripts/start-debug-chrome.sh`. Do not ask the consultant to change Chrome site permissions unless the Selenium run reports a specific browser permission failure. If Chrome debug is not listening, use the wrapper's auto-start path or request permission to run `scripts/start-debug-chrome.sh` before showing setup instructions to the consultant. If Codex asks for approval to run Maven outside the sandbox, request/accept that path rather than switching to a different harness.
 
+For Master Data Products & Services requests such as `TC-MD-PS-001`, do not create a fresh Playwright script or probe selectors first. Use the reusable Master Data runner:
+
+```bash
+scripts/run-master-data-test.sh --to TC5
+```
+
+For partial runs, pass the stopping point, for example `scripts/run-master-data-test.sh --to TC2`. The stable action layer is under `automation/master-data/`; add a missing action there only when the requested behavior is not already represented. See `MASTER_DATA_TEST_ARCHITECTURE.md`.
+
 Do not spend time recreating optional external integrations removed from the shared runner. `AzureDeploymentChecker` and `TicketHandler` are intentionally local-safe no-op stubs unless the original private implementations are restored.
 
 Classify each step as:

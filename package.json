@@ -2,9 +2,11 @@
   "name": "master-data-tests",
   "version": "1.0.0",
   "description": "Automated test suite for Master Data - Products & Services",
-  "main": "test_automation.js",
+  "main": "test_automation_cdp.js",
   "scripts": {
-    "test": "node test_automation.js",
+    "test": "node test_automation_cdp.js",
+    "test:master-data": "node test_automation_cdp.js",
+    "test:legacy": "node test_automation.js",
     "test:headless": "HEADLESS=true node test_automation.js",
     "test:report": "cat test-report.json"
   },

@@ -10,14 +10,18 @@ Complete automated test suite for validating the Master Data Products & Services
 - **test_cases.md** - Detailed test case documentation with all 5 test cases
 - **test_automation.py** - Python/Selenium automated test script
 - **test_automation.js** - JavaScript/Playwright automated test script
+- **test_automation_cdp.js** - Recommended CDP entrypoint that reuses the consultant's logged-in Chrome session
 
 ### Configuration & Setup
 - **package.json** - Node.js dependencies (Playwright)
 - **requirements.txt** - Python dependencies (Selenium)
 - **run_tests.sh** - Quick launch script (automated setup & execution)
+- **scripts/run-master-data-test.sh** - Recommended consultant runner
+- **automation/master-data/** - Reusable action, reporting, config, and scenario modules
 
 ### Documentation
 - **TEST_EXECUTION_GUIDE.md** - Complete guide for running tests
+- **MASTER_DATA_TEST_ARCHITECTURE.md** - Architecture for low-token reusable execution
 - **README_TEST_SUITE.md** - This file
 
 ---
@@ -31,14 +35,16 @@ cd /Users/suketsuman/SkillAutomation
 
 ### Step 2: Run Tests
 ```bash
-# Automatic setup & execution (Recommended)
-./run_tests.sh
+# Recommended local Chrome/CDP runner
+scripts/run-master-data-test.sh --to TC5
 
-# Or manually using Python
-python test_automation.py
+# Stop early, for example after TC2
+scripts/run-master-data-test.sh --to TC2
 
-# Or manually using Node.js
-npm install && npm test
+# Legacy/manual runners remain available when needed
+./run_tests.sh python
+
+./run_tests.sh node
 ```
 
 ### Step 3: View Results
@@ -108,9 +114,9 @@ Screenshots captured at each step for visual verification.
 ## 🔧 Customization Options
 
 ### Change Base URL
-Edit `test_automation.py` or `test_automation.js`:
-```python
-BASE_URL = 'https://your-url.com/'
+Use an environment variable:
+```bash
+MASTER_DATA_APP_URL="https://your-url.com/" scripts/run-master-data-test.sh --to TC5
 ```
 
 ### Increase Timeout
@@ -119,17 +125,13 @@ For slower networks:
 WAIT_TIMEOUT = 20  # increase from 10
 ```
 
-### Run in Headless Mode
+### Run a Partial Test
 ```bash
-HEADLESS=true npm test  # JavaScript
+scripts/run-master-data-test.sh --to TC2
 ```
 
-### Add Login Steps
-Extend test classes with authentication:
-```python
-def login(self, username, password):
-    # Add login logic
-```
+### Login
+Log in manually in the dedicated Chrome debug browser. The CDP runner reuses that browser session.
 
 ---
 
@@ -142,11 +144,8 @@ def login(self, username, password):
 
 ### Browser Won't Launch
 ```bash
-# Python: Update WebDriver
-pip install --upgrade webdriver-manager
-
-# JavaScript: Install browsers
-npx playwright install
+# Start the dedicated debug browser
+scripts/start-debug-chrome.sh "https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com/"
 ```
 
 ### Permission Denied Error
@@ -185,6 +184,8 @@ See **test_cases.md** for:
 - Pass/fail criteria
 - Test environment details
 
+See **MASTER_DATA_TEST_ARCHITECTURE.md** for the reusable action-layer architecture that avoids repeated selector probing.
+
 ---
 
 ## 🎯 Key Features
@@ -215,10 +216,14 @@ SkillAutomation/
 ├── test_cases.md                 ← Test case documentation
 ├── test_automation.py            ← Python/Selenium tests
 ├── test_automation.js            ← JavaScript/Playwright tests
+├── test_automation_cdp.js        ← Recommended CDP wrapper
+├── automation/master-data/       ← Action/reporting/scenario modules
+├── scripts/run-master-data-test.sh ← Consultant runner
 ├── package.json                  ← Node.js config
 ├── requirements.txt              ← Python packages
 ├── run_tests.sh                  ← Auto-launch script
 ├── TEST_EXECUTION_GUIDE.md       ← Detailed guide
+├── MASTER_DATA_TEST_ARCHITECTURE.md ← Low-token execution architecture
 └── README_TEST_SUITE.md          ← This file
 ```
 

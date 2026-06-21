@@ -10,13 +10,35 @@
 ## Quick Start
 
 ### Prerequisites
-- Node.js 14+ (for JavaScript version) OR Python 3.8+ (for Python version)
+- Node.js 14+
 - Chrome/Chromium browser installed
+- Dedicated Chrome debug session on port `9222`
 - Valid credentials for the test environment
 
 ### Installation & Execution
 
-#### Option 1: Using Python (Recommended)
+#### Option 1: Local Chrome/CDP Runner (Recommended)
+
+**Step 1: Install Dependencies**
+```bash
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install
+```
+
+**Step 2: Run Tests**
+```bash
+scripts/run-master-data-test.sh --to TC5
+
+# Or stop early, for example after TC2
+scripts/run-master-data-test.sh --to TC2
+```
+
+**Step 3: View Results**
+- Test report: `test-report.json`
+- Screenshots: `./test-screenshots/`
+
+---
+
+#### Option 2: Legacy Python/Selenium Runner
 
 **Step 1: Install Dependencies**
 ```bash
@@ -26,28 +48,6 @@ pip install -r requirements.txt
 **Step 2: Run Tests**
 ```bash
 python test_automation.py
-```
-
-**Step 3: View Results**
-- Test report: `test-report.json`
-- Screenshots: `./test-screenshots/`
-
----
-
-#### Option 2: Using JavaScript (Playwright)
-
-**Step 1: Install Dependencies**
-```bash
-npm install
-```
-
-**Step 2: Run Tests**
-```bash
-# With browser visible (debugging)
-npm test
-
-# Headless mode (CI/CD)
-npm run test:headless
 ```
 
 **Step 3: View Results**
@@ -68,7 +68,7 @@ npm run test:headless
 - **ID:** TC-MD-PS-001.2
 - **Steps:** 3
 - **Expected Duration:** ~30 seconds
-- **Key Assertions:** Page loads, URL verified, header displayed
+- **Key Assertions:** Page loads, header displayed
 
 ### Test Case 3: Verify New Button Options
 - **ID:** TC-MD-PS-001.3
@@ -240,14 +240,15 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-node@v4
         with:
-          python-version: '3.9'
-      - run: pip install -r requirements.txt
-      - run: python test_automation.py
+          node-version: '20'
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install
+      - run: scripts/start-debug-chrome.sh "https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com/"
+      - run: scripts/run-master-data-test.sh --to TC5
       - uses: actions/upload-artifact@v2
         if: always()
         with:
@@ -265,12 +266,12 @@ pipeline {
     stages {
         stage('Setup') {
             steps {
-                sh 'pip install -r requirements.txt'
+                sh 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install'
             }
         }
         stage('Test') {
             steps {
-                sh 'python test_automation.py'
+                sh 'scripts/run-master-data-test.sh --to TC5'
             }
         }
         stage('Report') {

@@ -2,9 +2,11 @@
 **/.DS_Store
 target/
 build/
+node_modules/
 test-evidence/
 test-screenshots/
 imported/twentyfive-regtest/tests/previousScreenshot/
+test-report.json
 *.log
 .idea/
 .skillautomation.env

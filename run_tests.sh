@@ -12,18 +12,18 @@ echo ""
 
 # Determine which version to run
 if [ "$1" == "node" ] || [ "$1" == "js" ]; then
-    echo "Running JavaScript version (Playwright)..."
+    echo "Running JavaScript CDP version (Playwright attached to local Chrome)..."
     echo ""
 
     # Check if node_modules exists
     if [ ! -d "node_modules" ]; then
         echo "Installing dependencies..."
-        npm install
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install
         echo ""
     fi
 
     echo "Starting tests..."
-    npm test
+    scripts/run-master-data-test.sh --to "${STOP_AT:-TC5}"
 
 elif [ "$1" == "python" ] || [ "$1" == "py" ] || [ -z "$1" ]; then
     echo "Running Python version (Selenium)..."
@@ -65,8 +65,8 @@ else
     echo "  ./run_tests.sh              # Run Python version (default)"
     echo "  ./run_tests.sh python       # Run Python version"
     echo "  ./run_tests.sh py           # Run Python version"
-    echo "  ./run_tests.sh node         # Run JavaScript version"
-    echo "  ./run_tests.sh js           # Run JavaScript version"
+    echo "  ./run_tests.sh node         # Run JavaScript CDP version"
+    echo "  ./run_tests.sh js           # Run JavaScript CDP version"
     exit 1
 fi
 

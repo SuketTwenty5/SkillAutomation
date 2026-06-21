@@ -139,6 +139,22 @@ Regenerate the guide set after updating `RTA_TEST_SUITE_FEATURE_MAP.md`:
 python3 scripts/generate-testcase-guides.py
 ```
 
+## Master Data Runner
+
+For Master Data Products & Services tests, use the reusable CDP/action runner instead of generating ad-hoc Playwright scripts:
+
+```bash
+scripts/run-master-data-test.sh --to TC5
+```
+
+To stop early:
+
+```bash
+scripts/run-master-data-test.sh --to TC2
+```
+
+The runner attaches to the consultant's logged-in Chrome debug session, reuses the action catalog under `automation/master-data/`, and keeps screenshots local. See `MASTER_DATA_TEST_ARCHITECTURE.md`.
+
 ## Important: Test Runner Behavior
 
 **When working with Claude agents (Codex, Claude Code, Claude Desktop):**

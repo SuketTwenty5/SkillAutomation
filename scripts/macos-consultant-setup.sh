@@ -504,6 +504,15 @@ scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
 
 List available suite names with \`scripts/run-twentyfive-test.sh --list-suites\`; the mapping is also in \`TEST_SUITES.md\`.
 
+If I ask for Master Data Products & Services, \`TC-MD-PS-001\`, or to run through a specific TC such as TC2 or TC5, use the reusable Master Data runner instead of creating a new Playwright script:
+
+\`\`\`bash
+cd "$WORKSPACE_DIR"
+scripts/run-master-data-test.sh --to TC5
+\`\`\`
+
+The action layer is in \`automation/master-data/\`; add missing actions there only when needed.
+
 If the pasted test case has a different tag, replace \`@TC-001\` with that tag. If there is no tag, inspect the existing feature files and generate only the missing glue needed for the pasted case.
 
 Important:
@@ -530,7 +539,7 @@ $CLAUDE_DESKTOP_PROMPT_FILE
 The default app URL is:
 ${SELECTED_APP_URL:-no URL selected}
 
-When I ask to run a test or named suite, first ask whether to launch Selenium Chrome with the default app URL above. If I provide a different URL, use that URL instead. Then run this Confluence/manual test or suite in my local Chrome using the bundled Twenty5 automation code. Use scripts/start-debug-chrome.sh, scripts/run-twentyfive-test.sh, TEST_SUITES.md, and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
+When I ask to run a test or named suite, first ask whether to launch Selenium Chrome with the default app URL above. If I provide a different URL, use that URL instead. Then run this Confluence/manual test or suite in my local Chrome using the bundled Twenty5 automation code. Use scripts/start-debug-chrome.sh, scripts/run-twentyfive-test.sh, scripts/run-master-data-test.sh, TEST_SUITES.md, MASTER_DATA_TEST_ARCHITECTURE.md, and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
 
 <paste test case here>
 EOF
