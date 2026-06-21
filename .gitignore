@@ -3,6 +3,8 @@
 target/
 build/
 test-evidence/
+test-screenshots/
+imported/twentyfive-regtest/tests/previousScreenshot/
 *.log
 .idea/
 .skillautomation.env
