@@ -1,0 +1,22 @@
+{
+  "name": "master-data-tests",
+  "version": "1.0.0",
+  "description": "Automated test suite for Master Data - Products & Services",
+  "main": "test_automation.js",
+  "scripts": {
+    "test": "node test_automation.js",
+    "test:headless": "HEADLESS=true node test_automation.js",
+    "test:report": "cat test-report.json"
+  },
+  "keywords": [
+    "automation",
+    "testing",
+    "playwright",
+    "e2e"
+  ],
+  "author": "QA Team",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.61.0"
+  }
+}

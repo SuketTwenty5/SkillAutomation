@@ -536,6 +536,25 @@ When I ask to run a test or named suite, first ask whether to launch Selenium Ch
 EOF
 }
 
+install_node_dependencies() {
+  # Install the workspace Node dependencies (Playwright lives in package.json)
+  # so consultants do not have to run `npm install` by hand. Browser binaries
+  # are skipped on purpose: tests attach to the consultant's Chrome over CDP
+  # (remote debugging port), so the bundled Chromium download is not needed.
+  local pkg_json="$WORKSPACE_DIR/package.json"
+  [[ -f "$pkg_json" ]] || { log "No package.json in workspace; skipping npm install"; return; }
+
+  if ! have npm; then
+    warn "npm not found on PATH; skipping Node dependency install (Playwright will be missing)."
+    return
+  fi
+
+  log "Installing workspace Node dependencies (Playwright, browser download skipped)"
+  if ! ( cd "$WORKSPACE_DIR" && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install ); then
+    warn "npm install failed; run it manually in $WORKSPACE_DIR if Playwright is needed."
+  fi
+}
+
 install_codex_skill_copy() {
   local source_skill="$WORKSPACE_DIR/skills/$SKILL_NAME"
   local dest_root="$HOME/.codex/skills"
@@ -776,6 +795,7 @@ main() {
   ensure_chrome
   ensure_selected_agent
   clone_or_update_workspace
+  install_node_dependencies
   install_codex_skill_copy
   install_with_npx_skills_if_requested
   select_app_url
