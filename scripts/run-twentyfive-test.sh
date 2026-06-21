@@ -181,6 +181,7 @@ start_chrome_debug() {
   open -na "Google Chrome" --args \
     --remote-debugging-port="$CHROME_DEBUG_PORT" \
     --user-data-dir="$CHROME_PROFILE" \
+    --disable-popup-blocking \
     "$APP_URL"
 }
 

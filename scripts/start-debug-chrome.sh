@@ -60,6 +60,7 @@ echo "Starting dedicated Chrome debug profile on port $CHROME_DEBUG_PORT."
 chrome_args=(
   --remote-debugging-port="$CHROME_DEBUG_PORT"
   --user-data-dir="$CHROME_PROFILE"
+  --disable-popup-blocking
 )
 
 if [[ -n "$APP_URL" ]]; then
