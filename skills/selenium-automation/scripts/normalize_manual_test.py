@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from pathlib import Path
 
@@ -18,7 +19,8 @@ def yaml_scalar(value: str | None) -> str:
     return f'"{escaped}"'
 
 
-def normalize(text: str) -> str:
+def parse(text: str) -> dict:
+    """Parse pasted manual-test text into a structured dict (shared by YAML/JSON)."""
     title = None
     preconditions: list[str] = []
     test_data: list[str] = []
@@ -48,6 +50,39 @@ def normalize(text: str) -> str:
         if match:
             current_step = (match.group(1), match.group(2).strip(), None)
             steps.append(current_step)
+
+    return {
+        "title": title,
+        "preconditions": preconditions,
+        "test_data": test_data,
+        "steps": [
+            {"id": sid, "action": action, "target": None, "value": None, "expected": expected}
+            for sid, action, expected in steps
+        ],
+    }
+
+
+def to_json(text: str) -> str:
+    """Emit steps.json consumable by map_steps.py."""
+    parsed = parse(text)
+    payload = {
+        "test_id": None,
+        "title": parsed["title"],
+        "source": "pasted-manual-test",
+        "environment": None,
+        "preconditions": parsed["preconditions"],
+        "test_data": parsed["test_data"],
+        "steps": parsed["steps"],
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
+
+
+def normalize(text: str) -> str:
+    parsed = parse(text)
+    title = parsed["title"]
+    preconditions = parsed["preconditions"]
+    test_data = parsed["test_data"]
+    steps = [(s["id"], s["action"], s["expected"]) for s in parsed["steps"]]
 
     lines = [
         "test_id: null",
@@ -81,11 +116,16 @@ def normalize(text: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Text file containing pasted manual test")
-    parser.add_argument("--out", default="-", help="Output YAML path or '-'")
+    parser.add_argument("--out", default="-", help="Output path or '-'")
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit steps.json (feeds map_steps.py) instead of YAML",
+    )
     args = parser.parse_args()
 
     text = Path(args.input).read_text(encoding="utf-8", errors="ignore")
-    output = normalize(text)
+    output = to_json(text) if args.json else normalize(text)
     if args.out == "-":
         print(output, end="")
     else:

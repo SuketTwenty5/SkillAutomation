@@ -46,6 +46,8 @@ Use `rg` to find:
 Manual step | Existing method/action | Confidence | Notes
 ```
 
+For Twenty5/IPE work, do not build this table by hand. Use the locator index to map steps to proven page-object locators deterministically (see "Locator Index" below), then refine the result.
+
 5. Generate only missing glue code. Do not duplicate page objects, locators, or utilities that already exist.
 6. Run the narrowest test command available, such as one Maven/Gradle test class or method.
 7. Return evidence: command, status, failing step, screenshots, logs, generated files, and unmapped steps.
@@ -93,6 +95,21 @@ Classify each step as:
 
 Stop before executing destructive flows against production unless the user explicitly confirms the environment and data safety.
 
+## Locator Index
+
+For Twenty5/IPE, the page objects already encode a human-named locator catalog via `@ElementName` + `@FindBy` + `@WebPage`. Reuse it instead of re-deriving selectors per run. Read `references/locator-index.md` for the full pipeline. Quick path:
+
+```bash
+# (Re)generate the catalog when page objects change:
+python3 skills/selenium-automation/scripts/build_locator_index.py
+
+# Manual test -> steps.json -> transparent mapping report:
+python3 skills/selenium-automation/scripts/normalize_manual_test.py input.txt --json --out test.steps.json
+python3 skills/selenium-automation/scripts/map_steps.py test.steps.json --out test.mapping.json
+```
+
+The mapping report classifies each step as `mapped` (call the existing page-object field/method in `candidates`), `needs-selector` (the only steps that may need a new selector), or `note` (navigation/verification). Treat `mapped` candidates as the preferred implementation; only fall back to `needs-selector` handling when no candidate fits. Run `python3 skills/selenium-automation/scripts/validate_locators.py --quiet` to fail fast if an indexed locator has gone stale before running a test.
+
 ## Code Generation Rules
 
 Prefer the framework already used by the repo.
@@ -118,8 +135,12 @@ Avoid brittle XPath. Prefer existing page object methods, stable `data-testid` a
 ## Runner Resources
 
 - `scripts/index_actions.py`: scan Java Selenium/Selenide code and produce a starter action catalog
-- `scripts/normalize_manual_test.py`: convert simple pasted/manual test text into YAML scaffolding
+- `scripts/build_locator_index.py`: scan page objects → searchable `references/locator-index.generated.json`
+- `scripts/normalize_manual_test.py`: convert simple pasted/manual test text into YAML scaffolding (add `--json` for `steps.json`)
+- `scripts/map_steps.py`: map `steps.json` against the locator index into a transparency mapping report
+- `scripts/validate_locators.py`: static, browser-free check that indexed locators still exist in source
 - `scripts/run_test.sh`: run Maven or Gradle tests and collect evidence
+- `references/locator-index.md`: locator index + step mapping pipeline reference
 - `references/confluence-test-format.md`: extraction rules for common Confluence test layouts
 - `references/examples.md`: examples of manual steps mapped to automation
 - `assets/runner-template/`: minimal Selenide Maven template that attaches to local Chrome

@@ -7,3 +7,5 @@ test-evidence/
 .idea/
 .skillautomation.env
 .skillautomation/
+__pycache__/
+*.pyc
