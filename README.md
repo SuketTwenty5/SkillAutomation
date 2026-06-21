@@ -139,6 +139,14 @@ Regenerate the guide set after updating `RTA_TEST_SUITE_FEATURE_MAP.md`:
 python3 scripts/generate-testcase-guides.py
 ```
 
+## Important: Test Runner Behavior
+
+**When working with Claude agents (Codex, Claude Code, Claude Desktop):**
+
+- **Always ask the consultant for explicit confirmation before restarting or rerunning a test suite**, even if the consultant repeats a command like "run Manufacturing Proposal."
+- Do not automatically assume a repeated command means to restart a stopped test.
+- This prevents unnecessary reruns and respects the consultant's time and intent.
+
 ## Standard Use
 
 1. Open this runner workspace in the local AI coding agent.
