@@ -6,10 +6,13 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEST_ROOT="${TEST_ROOT:-$REPO_ROOT/imported/twentyfive-regtest}"
 ENV_FILE="${ENV_FILE:-$REPO_ROOT/.skillautomation.env}"
 
-if [[ -f "$ENV_FILE" ]]; then
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-fi
+# shellcheck source=scripts/lib/env.sh
+source "$SCRIPT_DIR/lib/env.sh"
+source_env_preserving_caller "$ENV_FILE" \
+  APP_URL SELECTED_APP_URL CHROME_DEBUG_PORT USE_DEBUG_CHROME LOCAL_RUN \
+  DEBUG_HOLD_BROWSER CHROME_PROFILE CHROME_BIN METRICS_ENABLED CLEAN_FIRST \
+  STOP_ON_FAILURE DRY_RUN AUTO_START_CHROME TEST_SUITE Test_Suite SUITE \
+  CUCUMBER_TAGS
 
 DEFAULT_APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
 APP_URL="${APP_URL:-${SELECTED_APP_URL:-$DEFAULT_APP_URL}}"
@@ -24,16 +27,12 @@ CLEAN_FIRST="${CLEAN_FIRST:-}"
 STOP_ON_FAILURE="${STOP_ON_FAILURE:-false}"
 DRY_RUN="${DRY_RUN:-false}"
 
-running_inside_codex_sandbox() {
-  [[ -n "${CODEX_SANDBOX:-}" || -n "${CODEX_SHELL:-}" ]]
-}
-
-# AUTO_START_CHROME defaults to true ONLY if not set anywhere (env file or caller).
-# For local consultant runs, we ALWAYS require manual Chrome launch via start-debug-chrome.sh
-# to avoid duplicate windows. Force it to false unless explicitly overridden.
 if [[ -z "${AUTO_START_CHROME+x}" ]]; then
-  AUTO_START_CHROME="false"  # Changed from "true" to prevent auto-launch
+  AUTO_START_CHROME="false"
 fi
+
+# shellcheck source=scripts/lib/chrome-debug.sh
+source "$SCRIPT_DIR/lib/chrome-debug.sh"
 
 usage() {
   cat <<EOF
@@ -51,7 +50,7 @@ Environment:
   USE_DEBUG_CHROME    true attaches to Chrome on localhost:9222. Default true.
   LOCAL_RUN           Pass -Dlocal.run=true. Default true.
   DEBUG_HOLD_BROWSER  Pass -Ddebug=true. Default true when USE_DEBUG_CHROME=true.
-  AUTO_START_CHROME   Start Chrome debug profile if port is not listening. Default true.
+  AUTO_START_CHROME   Start Chrome debug profile if port is not listening. Default false.
                       Set to false to require a manually started debug browser.
   CHROME_PROFILE      Chrome profile used for Selenium attachment.
   METRICS_ENABLED     Enable InfluxDB writes. Default false for local runner.
@@ -160,50 +159,6 @@ safe_log_token() {
   printf '%s' "$1" | tr -c 'A-Za-z0-9_.-' '_'
 }
 
-chrome_debug_ready() {
-  curl -fsS "http://127.0.0.1:${CHROME_DEBUG_PORT}/json/version" >/dev/null 2>&1
-}
-
-wait_for_chrome_debug() {
-  local attempt
-  for attempt in {1..40}; do
-    if chrome_debug_ready; then
-      return 0
-    fi
-    sleep 0.5
-  done
-  return 1
-}
-
-start_chrome_debug() {
-  if [[ "$(uname -s)" != "Darwin" ]]; then
-    return 1
-  fi
-
-  # Never spawn a duplicate: if a debug session is already listening, reuse it.
-  if chrome_debug_ready; then
-    echo "Reusing existing Chrome debug session on port $CHROME_DEBUG_PORT"
-    return 0
-  fi
-
-  if [[ ! -x "$CHROME_BIN" ]]; then
-    echo "ERROR: Google Chrome binary not found at: $CHROME_BIN" >&2
-    return 1
-  fi
-
-  mkdir -p "$CHROME_PROFILE"
-  echo "Starting Chrome debug profile on port $CHROME_DEBUG_PORT"
-  # Launch the Chrome binary directly (not 'open -na') so the dedicated profile
-  # reuses a single instance instead of forcing duplicate windows.
-  "$CHROME_BIN" \
-    --remote-debugging-port="$CHROME_DEBUG_PORT" \
-    --user-data-dir="$CHROME_PROFILE" \
-    --disable-popup-blocking \
-    --no-first-run \
-    --no-default-browser-check \
-    "$APP_URL" >/dev/null 2>&1 &
-}
-
 REQUEST_MODE=""
 REQUEST_VALUE=""
 
@@ -308,27 +263,7 @@ if [[ ! -d "$TEST_ROOT" ]]; then
 fi
 
 if [[ "$USE_DEBUG_CHROME" == "true" && "$DRY_RUN" != "true" ]]; then
-  if ! chrome_debug_ready && [[ "$AUTO_START_CHROME" == "true" ]]; then
-    start_chrome_debug || true
-    wait_for_chrome_debug || true
-  fi
-
-  if ! chrome_debug_ready; then
-    cat >&2 <<EOF
-ERROR: Chrome debug endpoint is not listening on port $CHROME_DEBUG_PORT.
-
-Start the dedicated Chrome debug browser before running tests from Codex:
-
-  scripts/start-debug-chrome.sh "$APP_URL"
-
-Then log in to the target app in that Chrome window and rerun this command.
-
-If you are running from Claude Code or a normal Terminal, the wrapper can open Chrome for you with:
-
-  AUTO_START_CHROME=true
-EOF
-    exit 3
-  fi
+  ensure_chrome_debug "$APP_URL" "$AUTO_START_CHROME" "${ASSUME_YES:-false}"
 fi
 
 cd "$TEST_ROOT"

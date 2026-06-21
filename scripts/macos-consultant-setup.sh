@@ -489,27 +489,27 @@ cd "$WORKSPACE_DIR"
 scripts/start-debug-chrome.sh "${SELECTED_APP_URL:-}"
 \`\`\`
 
-After Chrome is open and I have logged in, run tests through the repository wrapper:
+After Chrome is open and I have logged in, run tests through the request runner first:
 
 \`\`\`bash
 cd "$WORKSPACE_DIR"
-scripts/run-twentyfive-test.sh @TC-001
+scripts/run-test-request.sh "TC-Prof-Services-001: Verify Proposal Setup Layout"
 \`\`\`
 
 If I ask to run a named suite such as "Manufacturing Proposal", use:
 
 \`\`\`bash
 cd "$WORKSPACE_DIR"
-scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
+scripts/run-test-request.sh "Manufacturing Proposal"
 \`\`\`
 
-List available suite names with \`scripts/run-twentyfive-test.sh --list-suites\`; the mapping is also in \`TEST_SUITES.md\`.
+List available mapped tests and suites with \`scripts/run-test-request.sh --list\`; the mapping is in \`config/test-registry.json\`, \`config/test-suites.json\`, and \`TEST_SUITES.md\`.
 
 If I ask for Master Data Products & Services, \`TC-MD-PS-001\`, or to run through a specific TC such as TC2 or TC5, use the reusable Master Data runner instead of creating a new Playwright script:
 
 \`\`\`bash
 cd "$WORKSPACE_DIR"
-scripts/run-master-data-test.sh --to TC5
+scripts/run-test-request.sh "TC-MD-PS-001"
 \`\`\`
 
 The action layer is in \`automation/master-data/\`; add missing actions there only when needed.
@@ -522,6 +522,7 @@ Important:
 - Attach Selenium to the Chrome debug session on \`127.0.0.1:$CHROME_DEBUG_PORT\`.
 - Do not ask me to change Chrome site permissions unless the Selenium run reports a specific browser permission failure.
 - Do not start Chrome during setup; start it only after I ask to run a test and approve the default URL or provide an alternate URL.
+- Use \`scripts/run-test-request.sh "<my request>"\` before creating new files. Only author new automation when the resolver cannot map the request.
 EOF
 }
 
@@ -540,7 +541,7 @@ $CLAUDE_DESKTOP_PROMPT_FILE
 The default app URL is:
 ${SELECTED_APP_URL:-no URL selected}
 
-When I ask to run a test or named suite, first ask whether to launch Selenium Chrome with the default app URL above. If I provide a different URL, use that URL instead. Then run this Confluence/manual test or suite in my local Chrome using the bundled Twenty5 automation code. Use scripts/start-debug-chrome.sh, scripts/run-twentyfive-test.sh, scripts/run-master-data-test.sh, TEST_SUITES.md, MASTER_DATA_TEST_ARCHITECTURE.md, and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
+When I ask to run a test or named suite, use scripts/run-test-request.sh "<my request>" first. It will show the default app URL, allow an alternate URL, launch/reuse Selenium Chrome when needed, preflight mapped data files/tags, and delegate to the correct runner. Use config/test-registry.json, config/test-suites.json, TEST_REQUEST_RUNNER.md, TEST_SUITES.md, MASTER_DATA_TEST_ARCHITECTURE.md, and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
 
 <paste test case here>
 EOF

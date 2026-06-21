@@ -1,9 +1,11 @@
 # Twenty5 Test Suite Map
 
+Source file: `config/test-suites.json`
+
 Use this map when a consultant asks to run a named test suite, for example:
 
 ```bash
-scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
+scripts/run-test-request.sh "Manufacturing Proposal"
 ```
 
 The runner executes each mapped Cucumber tag one by one, in the order shown here. For suite runs, it runs `mvn clean test` for the first tag and `mvn test` for the remaining tags.
@@ -23,6 +25,7 @@ The runner executes each mapped Cucumber tag one by one, in the order shown here
 List available suites from the runner:
 
 ```bash
+scripts/run-test-request.sh --list
 scripts/run-twentyfive-test.sh --list-suites
 ```
 

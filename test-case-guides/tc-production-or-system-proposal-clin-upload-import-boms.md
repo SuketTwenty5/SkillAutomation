@@ -4,7 +4,7 @@
 | --- | --- |
 | Test ID | TC-Production-or-System-Proposal-CLIN-Upload-Import-BOMs |
 | Title | Create Production/System Proposal, bulk-upload 160 CLINs from Excel, and Import Multiple BOMs |
-| Proposal Type | Regression \| Production/System Proposal |
+| Proposal Type | Regression\|Production/System |
 | Map source | `RTA_TEST_SUITE_FEATURE_MAP.md` (Production/System Proposal family, TC-004 .. TC-009) |
 | Feature file | `imported/twentyfive-regtest/tests/src/test/resources/features/testfolder/clinUploadImportBOMs.feature` |
 | Tags | `@TC-CLIN-UPLOAD-IMPORT @RUN` |
@@ -12,7 +12,7 @@
 ## Preconditions
 
 - The Twenty5 app is reachable and the tester is logged in (SSO).
-- Test data file **`CLIN_Upload_Regression_Test_large.xlsx`** (160 CLIN rows) is available on the machine running the test.
+- Test data file **`CLIN_Upload_Regression_Test_large.xlsx`** (160 CLIN rows) is available on the machine running the test. Set `CLIN_UPLOAD_FILE` if it is not in `~/Downloads`.
 - Test Data Values are available for: proposal Title, Estimate name, Regression CLINs View, Regression Test View.
 
 ## Run Instructions
@@ -20,21 +20,20 @@
 When a consultant asks to run this test, use the default app URL unless they provide another URL:
 
 ```text
-https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote
+https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com/
 ```
 
 For Claude Desktop, ask before launching Selenium Chrome with the default URL. If the user provides another URL, launch that URL instead.
 
 ```bash
-scripts/start-debug-chrome.sh "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
-scripts/run-twentyfive-test.sh @TC-CLIN-UPLOAD-IMPORT
+scripts/run-test-request.sh "TC-CLIN-UPLOAD-IMPORT"
 ```
 
 ## Test Steps
 
 | # | Test Step Description | Expected Result | Test Data / Screen Capture |
 | --- | --- | --- | --- |
-| 1 | Start creating a new Proposal with type **Regression \| Production/System** and fill the required fields with Test Data Values. | The required fields are filled with data. | **Title:** `<proposal title>`<br>**Project Type:** Regression \| Production/System<br>**Project Start:** 1/1/27<br>**Project End:** 12/31/31<br>**Business Area:** Missiles & Fire Control<br>**Plant or Site:** LMMFC ORLANDO SITE, Orlando<br>**Client/Customer (Sell-to):** Regression Test - Customer USD (RTC1) |
+| 1 | Start creating a new Proposal with type **Regression\|Production/System** and fill the required fields with Test Data Values. | The required fields are filled with data. | **Title:** `<proposal title>`<br>**Project Type:** Regression\|Production/System<br>**Project Start:** 1/1/27<br>**Project End:** 12/31/31<br>**Business Area:** Missiles & Fire Control<br>**Plant or Site:** LMMFC ORLANDO SITE, Orlando<br>**Client/Customer (Sell-to):** Regression Test - Customer USD (RTC1) |
 | 2 | Click **Save**. | Data is saved. The proposal is assigned an ID, displayed in the browser's URL bar. | e.g. `proposal:95f0f3ca-a98c-43ee-bb27-a3325f3e2939` (image-20260614-144114.png) |
 | 3 | Navigate to the **WBS Cost Structure** tab. | The content of the WBS Cost Structure tab is displayed. | image-20260614-144306.png |
 | 4 | Create an Estimate by clicking the **"+"** icon by the first row and provide a Test Data Value name for it. | A row with an Estimate line is added to the grid (Cost Structure = `Estimate`). | image-20260614-144441.png / image-20260614-144627.png |
@@ -53,20 +52,20 @@ scripts/run-twentyfive-test.sh @TC-CLIN-UPLOAD-IMPORT
 
 ## Automation Coverage (reuse map)
 
-This case reuses the existing Production/System Proposal glue. The table maps each step to the existing scenario/glue it reuses, and flags the parts that need **new glue / data**.
+This case reuses the existing Production/System Proposal glue and the shared CLIN upload step.
 
 | Steps | Reuses | Source |
 | --- | --- | --- |
 | 1-2 (create + save proposal) | `Project Type` select, required-field entry, Save, URL-ID assertion | `LMsetupProductionOrSystemProposal.feature` (TC-004 / TC-005) |
 | 3-6 (WBS estimate + Confirm & Release) | `+` add row, `Create` link, `Estimate` popUp, Owner verify, `Confirm & Release`, `Open` link | `LMstructreSetsEstimatesCLINs.feature` (TC-007) |
 | 7-8 (CLINs tab + view) | `CLINs` tab, `Regression CLINs View` select | `LMstructreSetsEstimatesCLINs.feature` (TC-008) |
-| **9-11 (bulk CLIN Excel upload + 160-record count)** | **NEW glue required** — CLINs `Upload` button, `Upload Data from XL or file` dialog, `Select File`, file upload, `Records (1-160/160)` assertion. No existing page object/step covers the CLINs upload dialog. | _to be added in `ClinsPage` + `IpeSteps`_ |
+| **9-11 (bulk CLIN Excel upload + 160-record count)** | CLINs `Upload` button, `Upload Data from XL or file` dialog, file upload, ExtJS store-backed 160-record assertion. | `ClinsPage` + `IpeSteps` |
 | 12 (save) | Save | existing |
 | 13-15 (Import Multiple BOMs) | `Group Gear` menu, `Import Multiple BOMs`, `Select Contract Lines to Import` popUp, `Top row` checkbox, all-rows-selected verify, `Import BOMs`, notifications | `LMstructreSetsEstimatesCLINs.feature` (TC-009) + `ClinsPage` |
 | 15 (Re-import BOM link per row) | partial — `Import BOM` / `Cost BOM` column check exists; per-row `Re-import BOM` assertion is **NEW** | `basicBOMImport.feature` pattern |
 | 16 (open estimate via pop-out) | `Estimate Hyperlink` in `ClinsTable`, switch to tab 2, view select | `ClinsTable.java` + TC-009 |
 
-> **Gaps to close before a green run:** (a) the data file `CLIN_Upload_Regression_Test_large.xlsx` must be present, and (b) new Java glue for the CLINs **Upload Data from XL or file** dialog + the **Records (1-160/160)** and per-row **Re-import BOM** assertions must be added and compiled (`mvn` build).
+> **Run data:** the data file `CLIN_Upload_Regression_Test_large.xlsx` must be present locally. The runner checks `CLIN_UPLOAD_FILE` first and falls back to `~/Downloads/CLIN_Upload_Regression_Test_large.xlsx`.
 
 ## Gherkin Scenario
 
@@ -89,7 +88,7 @@ Scenario: TC-Production-or-System-Proposal-CLIN-Upload-Import-BOMs: Bulk CLIN up
     # On the LM environment: Business Area = 'Leading Company' field (placeholder 'Select Company');
     # Plant or Site = 'Leading Site or Department' field (placeholder 'Select Department').
     When I enter data into the next fields:
-      | 'Project Type' field | Regression \| Production/System Proposal |
+      | 'Project Type' field | Regression\|Production/System |
     And I wait for 5 seconds
     When I enter data into the next fields:
       | 'Title or Brief Description' field  | $uniqueProposalName             |
@@ -146,10 +145,9 @@ Scenario: TC-Production-or-System-Proposal-CLIN-Upload-Import-BOMs: Bulk CLIN up
     Then text of 'View' dropdown equals 'View: Regression CLINs View (shared)'
 
     And info: ---9-11. Upload CLINs from XL (NEW GLUE) and verify 160 records ---
-    # --- requires new glue: CLINs 'Upload' button + 'Upload Data from XL or file' dialog ---
     When I click on 'Upload' button
     And 'Upload Data from XL or file' dialog is displayed
-    And I upload CLIN file '/Users/suketsuman/Downloads/CLIN_Upload_Regression_Test_large.xlsx'
+    And I upload CLIN file 'CLIN_Upload_Regression_Test_large.xlsx'
     And I wait for 20 seconds
     Then I verify 160 records are loaded in the CLINs grid
 

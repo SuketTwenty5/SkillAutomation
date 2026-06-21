@@ -1586,6 +1586,7 @@ Selenide.sleep(3000);
 
     @And("^(?:I |)upload CLIN file '(.+)'$")
     public void uploadClinFile(String filePath) {
+        File uploadFile = resolveClinUploadFile(filePath);
         // Wire the ExtJS filefield change handler for the currently visible upload window,
         // regardless of its component id (the CLINs "Upload Data from XL or file" window
         // differs from the BOM import window's iBEImportExcelWindow id).
@@ -1603,7 +1604,39 @@ Selenide.sleep(3000);
                 "  e.style.display='block'; e.style.visibility='visible'; e.style.opacity=1;" +
                 "});");
         $x("//*[@role='dialog' and @aria-hidden='false']//input[@type='file']")
-                .uploadFile(new File(filePath));
+                .uploadFile(uploadFile);
+    }
+
+    private File resolveClinUploadFile(String filePath) {
+        File direct = new File(filePath);
+        if (direct.isAbsolute() && direct.isFile()) {
+            return direct;
+        }
+
+        List<File> candidates = new ArrayList<>();
+        String propertyPath = System.getProperty("clin.upload.file", "");
+        String envPath = System.getenv("CLIN_UPLOAD_FILE");
+        if (propertyPath != null && !propertyPath.trim().isEmpty()) {
+            candidates.add(new File(propertyPath));
+        }
+        if (envPath != null && !envPath.trim().isEmpty()) {
+            candidates.add(new File(envPath));
+        }
+        candidates.add(direct);
+        candidates.add(new File(System.getProperty("user.home"), "Downloads/" + filePath));
+        candidates.add(new File("test-data", filePath));
+        candidates.add(new File("tests/src/test/resources/test-data", filePath));
+
+        for (File candidate : candidates) {
+            if (candidate.isFile()) {
+                logActionF("Using CLIN upload file: %s", candidate.getAbsolutePath());
+                return candidate;
+            }
+        }
+
+        throw new IllegalArgumentException(
+                "CLIN upload file not found. Set CLIN_UPLOAD_FILE or -Dclin.upload.file, or place " +
+                        filePath + " in ~/Downloads.");
     }
 
     @Then("^(?:I |)verify (\\d+) records are loaded in the (CLINs|import) grid$")

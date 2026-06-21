@@ -121,6 +121,18 @@ The setup script starts the dedicated Chrome debug profile on port `9222` before
 scripts/start-debug-chrome.sh "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
 ```
 
+### Run Tests From Consultant Requests
+
+Use the request runner when a consultant asks for a mapped test or named suite:
+
+```bash
+scripts/run-test-request.sh "run TC-Prof-Services-001: Verify Proposal Setup Layout"
+scripts/run-test-request.sh "Manufacturing Proposal"
+scripts/run-test-request.sh "TC-MD-PS-001"
+```
+
+It resolves the request from `config/test-registry.json` and `config/test-suites.json`, shows the default URL, preflights required files/tags, launches or reuses the Chrome debug profile, and delegates to the correct low-level runner. See `TEST_REQUEST_RUNNER.md`.
+
 This avoids Codex GUI-launch approval prompts during the test run while keeping Claude users on the auto-launch path.
 
 ## RTA Test Case Guides

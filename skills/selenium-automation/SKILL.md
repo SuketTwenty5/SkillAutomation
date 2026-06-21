@@ -67,13 +67,21 @@ For Twenty5/IPE regression work, also read `references/twentyfive-action-catalog
 For Twenty5/IPE execution, prefer the repository wrapper instead of hand-writing Maven commands:
 
 ```bash
+scripts/run-test-request.sh "run TC-Prof-Services-001: Verify Proposal Setup Layout"
+```
+
+The request runner resolves mapped Confluence test IDs, named suites, Master Data tests, default URLs, required local files, and Chrome debug startup from `config/test-registry.json` and `config/test-suites.json`. Use it first whenever the consultant asks in plain English. Only fall back to lower-level wrappers when the resolver cannot map the request or when you are debugging the runner itself.
+
+For a direct low-level Cucumber run:
+
+```bash
 APP_URL="<target-url>" CUCUMBER_TAGS="@TC-001" scripts/run-twentyfive-test.sh
 ```
 
 If a consultant asks to run a named suite such as "Manufacturing Proposal", use the suite runner instead of expanding tags by hand:
 
 ```bash
-scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
+scripts/run-test-request.sh "Manufacturing Proposal"
 ```
 
 The suite-to-tag mapping is in `TEST_SUITES.md`; the runner also supports `scripts/run-twentyfive-test.sh --list-suites`.

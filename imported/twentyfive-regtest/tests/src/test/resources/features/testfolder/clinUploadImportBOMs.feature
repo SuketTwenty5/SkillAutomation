@@ -3,9 +3,9 @@ Feature: CLIN Bulk Upload & Import Multiple BOMs (Production/System Proposal)
 
   # Reuses existing Production/System glue (setup, WBS estimate, CLINs view,
   # Group Gear -> Import Multiple BOMs). Steps 9-11 (CLINs "Upload Data from XL
-  # or file" dialog + 160-record count) and the per-row "Re-import BOM" check
-  # require NEW glue in ClinsPage/IpeSteps, and the data file
-  # CLIN_Upload_Regression_Test_large.xlsx must be present.
+  # or file" dialog + 160-record count) reuse CLIN upload glue in
+  # ClinsPage/IpeSteps. The data file CLIN_Upload_Regression_Test_large.xlsx
+  # must be present locally or provided through CLIN_UPLOAD_FILE.
 
   @TC-CLIN-UPLOAD-IMPORT @RUN
   Scenario: TC-Production-or-System-Proposal-CLIN-Upload-Import-BOMs: Bulk CLIN upload & Import Multiple BOMs
@@ -25,7 +25,7 @@ Feature: CLIN Bulk Upload & Import Multiple BOMs (Production/System Proposal)
     # Business Area = 'Leading Company' field (placeholder 'Select Company');
     # Plant or Site = 'Leading Site or Department' field (placeholder 'Select Department').
     When I enter data into the next fields:
-      | 'Project Type' field | Regression \| Production/System Proposal |
+      | 'Project Type' field | Regression\|Production/System |
     And I wait for 5 seconds
     Then page with name 'Setup page' is opened
     When I enter data into the next fields:
@@ -88,10 +88,9 @@ Feature: CLIN Bulk Upload & Import Multiple BOMs (Production/System Proposal)
     Then text of 'View' dropdown equals 'View: Regression CLINs View (shared)'
 
     And info: ---9-11. Upload CLINs from XL (NEW GLUE) and verify 160 records ---
-    # --- requires new glue: CLINs 'Upload' button + 'Upload Data from XL or file' dialog ---
     When I click on 'Upload' button
     And 'Upload Data from XL or file' dialog is displayed
-    And I upload CLIN file '/Users/suketsuman/Downloads/CLIN_Upload_Regression_Test_large.xlsx'
+    And I upload CLIN file 'CLIN_Upload_Regression_Test_large.xlsx'
     And I wait for 20 seconds
     Then I verify 160 records are loaded in the CLINs grid
 

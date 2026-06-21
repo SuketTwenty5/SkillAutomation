@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "defaults": {
+    "quoteUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+    "lmUrl": "https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com/"
+  },
+  "tests": [
+    {
+      "id": "TC-Prof-Services-001",
+      "title": "Verify Proposal Setup Layout",
+      "aliases": [
+        "tc-prof-services-001 verify proposal setup layout",
+        "verify proposal setup layout",
+        "proposal setup layout"
+      ],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@TC-001"],
+      "feature": "imported/twentyfive-regtest/tests/src/test/resources/features/testfolder/setup_professional_services_proposal.feature",
+      "guide": "test-case-guides/tc-prof-services-001.md",
+      "source": "https://twenty5.atlassian.net/wiki/spaces/RTA/pages/189956097/TC-Prof-Services-001+Verify+Proposal+Setup+Layout"
+    },
+    {
+      "id": "TC-CLIN-UPLOAD-IMPORT",
+      "title": "Bulk CLIN Upload and Import Multiple BOMs",
+      "aliases": [
+        "clin upload import boms",
+        "bulk clin upload",
+        "production system proposal clin upload import boms",
+        "import multiple boms"
+      ],
+      "runner": "cucumber",
+      "defaultUrl": "https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com/",
+      "tags": ["@TC-CLIN-UPLOAD-IMPORT"],
+      "feature": "imported/twentyfive-regtest/tests/src/test/resources/features/testfolder/clinUploadImportBOMs.feature",
+      "guide": "test-case-guides/tc-production-or-system-proposal-clin-upload-import-boms.md",
+      "requiredFiles": [
+        {
+          "name": "CLIN upload workbook",
+          "env": "CLIN_UPLOAD_FILE",
+          "defaultPath": "~/Downloads/CLIN_Upload_Regression_Test_large.xlsx"
+        }
+      ]
+    },
+    {
+      "id": "TC-MD-PS-001",
+      "title": "Master Data Products & Services",
+      "aliases": [
+        "master data products services",
+        "master data products and services",
+        "products services master data"
+      ],
+      "runner": "master-data",
+      "defaultUrl": "https://app-twenty5ipe-lm-dev.cfapps.us10.hana.ondemand.com/",
+      "args": ["--to", "TC5"],
+      "guide": "MASTER_DATA_TEST_ARCHITECTURE.md"
+    }
+  ]
+}

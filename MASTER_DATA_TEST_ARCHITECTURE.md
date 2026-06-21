@@ -18,6 +18,7 @@ Consultant request
 Use the wrapper for Master Data Products & Services:
 
 ```bash
+scripts/run-test-request.sh "TC-MD-PS-001"
 scripts/run-master-data-test.sh --to TC5
 ```
 

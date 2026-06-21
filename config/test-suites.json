@@ -1,0 +1,76 @@
+{
+  "suites": [
+    {
+      "name": "Smoke Tests",
+      "aliases": ["smoke", "smoke tests"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@SMOKE-TEST"]
+    },
+    {
+      "name": "Professional Services Proposal",
+      "aliases": ["professional services", "prof services proposal", "professional services proposal"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": [
+        "@SETUP-PROFF-SERVICES",
+        "@COST-CREATION-PROFF-SERVICES",
+        "@PRICING-ASSIGNMENT-PROFF-SERVICES"
+      ]
+    },
+    {
+      "name": "Manufacturing Proposal",
+      "aliases": ["manufacturing", "manufacturing proposal"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": [
+        "@SETUP-MANUFACTURING",
+        "@COST-CREATION-MANUFACTURING_PROPOSAL",
+        "@OVERHEAD-COST-CREATION-MANUFACTURING_PROPOSAL",
+        "@AMORTIZATION-DEPRECIATION-MANUFACTURING-PROPOSAL"
+      ]
+    },
+    {
+      "name": "Copy Prior Manufacturing Proposal",
+      "aliases": ["copy prior manufacturing", "copy prior manufacturing proposal"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@copyManufacturingPriorProposal"]
+    },
+    {
+      "name": "Distribute Labor Costs using Manual Effort input",
+      "aliases": ["distribute labor costs", "manual effort input"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@DistributeLaborCosts"]
+    },
+    {
+      "name": "Check that Labor Inflation is calculated correctly over the length of the proposal",
+      "aliases": ["labor inflation", "check labor inflation"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@laborInflationProposal"]
+    },
+    {
+      "name": "BOM Import",
+      "aliases": ["bom import", "basic bom import"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@basicImportBOM"]
+    },
+    {
+      "name": "Excel BOM Import",
+      "aliases": ["excel bom import", "bom import from excel"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@excelBOMImport"]
+    },
+    {
+      "name": "Performance",
+      "aliases": ["performance", "fcp"],
+      "runner": "cucumber",
+      "defaultUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote",
+      "tags": ["@FCP"]
+    }
+  ]
+}
