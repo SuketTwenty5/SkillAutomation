@@ -239,7 +239,19 @@ public class CucumberRuntime {
 
         }else{
             if(hasRunTag || hasEndTag){
-                AllureUtils.logActionF("Using Previous test Driver");
+                // For @RUN/@END tags, check if driver already exists from a prior @START scenario.
+                // If not, initialize it now with debug settings enabled.
+                if (!isDriverInitialized()) {
+                    AllureUtils.logActionF("Driver not initialized yet. Initializing for @RUN/@END scenario.");
+                    currentFeatureFile = getFeatureFileNameFromScenarioId(scenario);
+                    prepareChromeDriver(scenario, currentFeatureFile);
+                    prepareEnvPropertiesForReport();
+                    SelenideLogger.addListener("AllureSelenide", new AllureSelenide()
+                            .screenshots(true)
+                    );
+                } else {
+                    AllureUtils.logActionF("Using Previous test Driver");
+                }
 
             } else if (hasDebugTag) {
                 AllureUtils.logActionF("Debug mode - Using Previous test Driver and skipping driver initialization");
