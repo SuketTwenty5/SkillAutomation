@@ -28,8 +28,11 @@ running_inside_codex_sandbox() {
   [[ -n "${CODEX_SANDBOX:-}" || -n "${CODEX_SHELL:-}" ]]
 }
 
+# AUTO_START_CHROME defaults to true ONLY if not set anywhere (env file or caller).
+# For local consultant runs, we ALWAYS require manual Chrome launch via start-debug-chrome.sh
+# to avoid duplicate windows. Force it to false unless explicitly overridden.
 if [[ -z "${AUTO_START_CHROME+x}" ]]; then
-  AUTO_START_CHROME="true"
+  AUTO_START_CHROME="false"  # Changed from "true" to prevent auto-launch
 fi
 
 usage() {
