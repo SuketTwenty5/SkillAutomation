@@ -147,6 +147,13 @@ python3 scripts/generate-testcase-guides.py
 - Do not automatically assume a repeated command means to restart a stopped test.
 - This prevents unnecessary reruns and respects the consultant's time and intent.
 
+- **When stopping a test run, aggressively kill all related processes**, using force terminate:
+  ```bash
+  pkill -9 -f "java.*maven" || true
+  pkill -9 -f "mvn.*RunTest" || true
+  ```
+- Do not rely on gentle signals (SIGTERM) alone — residual processes can continue running in the background.
+
 ## Standard Use
 
 1. Open this runner workspace in the local AI coding agent.
