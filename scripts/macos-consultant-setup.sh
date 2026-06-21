@@ -495,6 +495,15 @@ cd "$WORKSPACE_DIR"
 scripts/run-twentyfive-test.sh @TC-001
 \`\`\`
 
+If I ask to run a named suite such as "Manufacturing Proposal", use:
+
+\`\`\`bash
+cd "$WORKSPACE_DIR"
+scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
+\`\`\`
+
+List available suite names with \`scripts/run-twentyfive-test.sh --list-suites\`; the mapping is also in \`TEST_SUITES.md\`.
+
 If the pasted test case has a different tag, replace \`@TC-001\` with that tag. If there is no tag, inspect the existing feature files and generate only the missing glue needed for the pasted case.
 
 Important:
@@ -521,7 +530,7 @@ $CLAUDE_DESKTOP_PROMPT_FILE
 The default app URL is:
 ${SELECTED_APP_URL:-no URL selected}
 
-When I ask to run a test, first ask whether to launch Selenium Chrome with the default app URL above. If I provide a different URL, use that URL instead. Then run this Confluence/manual test in my local Chrome using the bundled Twenty5 automation code. Use scripts/start-debug-chrome.sh, scripts/run-twentyfive-test.sh, and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
+When I ask to run a test or named suite, first ask whether to launch Selenium Chrome with the default app URL above. If I provide a different URL, use that URL instead. Then run this Confluence/manual test or suite in my local Chrome using the bundled Twenty5 automation code. Use scripts/start-debug-chrome.sh, scripts/run-twentyfive-test.sh, TEST_SUITES.md, and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
 
 <paste test case here>
 EOF

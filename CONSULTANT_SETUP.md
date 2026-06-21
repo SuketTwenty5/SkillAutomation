@@ -125,6 +125,15 @@ cd ~/SkillAutomation
 scripts/run-twentyfive-test.sh @TC-001
 ```
 
+Named suites can also be run by suite name:
+
+```bash
+scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
+scripts/run-twentyfive-test.sh --list-suites
+```
+
+The suite mapping is documented in `TEST_SUITES.md`.
+
 The runner defaults to `https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote`. Or specify the URL and tag explicitly:
 
 ```bash

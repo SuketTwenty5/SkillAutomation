@@ -95,6 +95,18 @@ cd ~/SkillAutomation
 scripts/run-twentyfive-test.sh @TC-001
 ```
 
+To run a named suite, use the suite name directly:
+
+```bash
+scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
+```
+
+Available suite mappings are in `TEST_SUITES.md`; list them from the runner with:
+
+```bash
+scripts/run-twentyfive-test.sh --list-suites
+```
+
 The runner defaults to `https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote`. You can override it:
 
 ```bash
@@ -110,6 +122,22 @@ scripts/start-debug-chrome.sh "https://approuter-twenty5ipe-dev.cfapps.us10.hana
 ```
 
 This avoids Codex GUI-launch approval prompts during the test run while keeping Claude users on the auto-launch path.
+
+## RTA Test Case Guides
+
+The scoped RTA Confluence test cases are generated as Markdown guides under:
+
+```text
+test-case-guides/README.md
+```
+
+Each mapped guide includes the RTA page link, local feature/scenario, Cucumber tags, run command, section summary, and Gherkin excerpt. Pages without an exact local feature match are still listed and marked as not automated yet.
+
+Regenerate the guide set after updating `RTA_TEST_SUITE_FEATURE_MAP.md`:
+
+```bash
+python3 scripts/generate-testcase-guides.py
+```
 
 ## Standard Use
 

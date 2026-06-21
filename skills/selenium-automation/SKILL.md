@@ -68,6 +68,14 @@ For Twenty5/IPE execution, prefer the repository wrapper instead of hand-writing
 APP_URL="<target-url>" CUCUMBER_TAGS="@TC-001" scripts/run-twentyfive-test.sh
 ```
 
+If a consultant asks to run a named suite such as "Manufacturing Proposal", use the suite runner instead of expanding tags by hand:
+
+```bash
+scripts/run-twentyfive-test.sh --suite "Manufacturing Proposal"
+```
+
+The suite-to-tag mapping is in `TEST_SUITES.md`; the runner also supports `scripts/run-twentyfive-test.sh --list-suites`.
+
 If `.skillautomation.env` exists from `scripts/macos-consultant-setup.sh`, omit `APP_URL`; the runner will reuse the selected setup URL. The wrapper already includes `-pl tests -am`, `RunTest`, `surefire.failIfNoSpecifiedTests=false`, and Selenium attach defaults.
 
 When a consultant asks to run a test and does not provide a URL, tell them the run will use the default URL `https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote`. If they provide a different URL in the request, pass it through `APP_URL="<url>"`. Do not ask for URL selection during setup. For Claude Desktop handoffs, if Chrome is not already running, ask whether to launch Selenium Chrome with the default URL; if the user provides an alternate URL, launch that URL instead.
