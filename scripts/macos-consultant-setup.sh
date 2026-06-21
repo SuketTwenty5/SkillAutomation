@@ -432,7 +432,11 @@ write_workspace_env() {
     printf 'APP_URL=%q\n' "$SELECTED_APP_URL"
     printf 'CHROME_DEBUG_PORT=%q\n' "$CHROME_DEBUG_PORT"
     printf 'CHROME_PROFILE=%q\n' "$CHROME_PROFILE"
-    printf 'AUTO_START_CHROME=true\n'
+    if [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]]; then
+      printf 'AUTO_START_CHROME=false\n'
+    else
+      printf 'AUTO_START_CHROME=true\n'
+    fi
   } > "$WORKSPACE_ENV_FILE"
 }
 
@@ -465,19 +469,26 @@ ${SELECTED_APP_LABEL:-none}
 ${SELECTED_APP_URL:-no URL selected}
 \`\`\`
 
-Chrome is launched with remote debugging on:
+Chrome should be launched only when I ask to run a test. Use remote debugging on:
 
 \`\`\`text
 127.0.0.1:$CHROME_DEBUG_PORT
 \`\`\`
 
-When I paste a Confluence/manual test case, do not try to detect the URL from browser settings. Use the saved workspace environment file or this exact URL:
+When I paste a Confluence/manual test case, do not try to detect the URL from browser settings. Use the saved workspace environment file or this default URL:
 
 \`\`\`text
 ${SELECTED_APP_URL:-}
 \`\`\`
 
-Run tests through the repository wrapper:
+Before running the first test, ask whether I want to launch the Selenium Chrome browser with the default URL shown above. If I provide a different URL, launch Chrome with that URL instead. Use:
+
+\`\`\`bash
+cd "$WORKSPACE_DIR"
+scripts/start-debug-chrome.sh "${SELECTED_APP_URL:-}"
+\`\`\`
+
+After Chrome is open and I have logged in, run tests through the repository wrapper:
 
 \`\`\`bash
 cd "$WORKSPACE_DIR"
@@ -489,14 +500,9 @@ If the pasted test case has a different tag, replace \`@TC-001\` with that tag. 
 Important:
 
 - Reuse the bundled Twenty5 automation code under \`imported/twentyfive-regtest\`.
-- Attach Selenium to the existing Chrome debug session on \`127.0.0.1:$CHROME_DEBUG_PORT\`.
+- Attach Selenium to the Chrome debug session on \`127.0.0.1:$CHROME_DEBUG_PORT\`.
 - Do not ask me to change Chrome site permissions unless the Selenium run reports a specific browser permission failure.
-- If Chrome is not listening, tell me to start the dedicated browser from Terminal with:
-
-\`\`\`bash
-cd "$WORKSPACE_DIR"
-scripts/start-debug-chrome.sh "${SELECTED_APP_URL:-}"
-\`\`\`
+- Do not start Chrome during setup; start it only after I ask to run a test and approve the default URL or provide an alternate URL.
 EOF
 }
 
@@ -512,10 +518,10 @@ $WORKSPACE_DIR
 Read this handoff file first:
 $CLAUDE_DESKTOP_PROMPT_FILE
 
-The app URL is:
+The default app URL is:
 ${SELECTED_APP_URL:-no URL selected}
 
-Run this Confluence/manual test in my local Chrome using the bundled Twenty5 automation code. Use scripts/run-twentyfive-test.sh and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
+When I ask to run a test, first ask whether to launch Selenium Chrome with the default app URL above. If I provide a different URL, use that URL instead. Then run this Confluence/manual test in my local Chrome using the bundled Twenty5 automation code. Use scripts/start-debug-chrome.sh, scripts/run-twentyfive-test.sh, and the saved .skillautomation.env; do not try to infer the URL from Chrome settings.
 
 <paste test case here>
 EOF
@@ -639,6 +645,11 @@ open_app_url_in_debug_chrome() {
 }
 
 start_debug_chrome() {
+  if [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]]; then
+    log "Skipping Chrome launch for Claude Desktop; it will launch when a test run is requested."
+    return
+  fi
+
   mkdir -p "$CHROME_PROFILE"
 
   if lsof -nP -iTCP:"$CHROME_DEBUG_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
@@ -674,9 +685,7 @@ Selected app:
 ${SELECTED_APP_LABEL:-none}
 ${SELECTED_APP_URL:-no URL opened}
 
-In the Chrome window that opened:
-1. Log in to the target application manually.
-2. Keep that Chrome window open.
+No browser was opened for Claude Desktop setup. When you ask Claude Desktop to run a test, it should ask whether to launch Selenium Chrome with the default URL above or with an alternate URL you provide.
 
 For Claude Desktop:
 1. Paste the starter prompt copied to your clipboard.

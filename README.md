@@ -56,7 +56,7 @@ They open that folder in Codex/Claude Code, not an empty workspace.
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-This checks/installs prerequisites, asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates the workspace, installs the skill copy for Codex, starts Chrome with remote debugging, opens the default BTP Golden URL, and opens the selected AI agent in the workspace.
+This checks/installs prerequisites, asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates the workspace, installs the skill copy for Codex, and opens the selected AI agent in the workspace. For Codex and Claude Code it also starts Chrome with remote debugging and opens the default BTP Golden URL. For Claude Desktop, Chrome is launched later when the user asks to run a test.
 
 Useful overrides:
 
@@ -70,7 +70,7 @@ For consultants who already use Claude for Desktop:
 AI_AGENT=claude-desktop /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/SuketTwenty5/SkillAutomation/main/scripts/macos-consultant-setup.sh)"
 ```
 
-This also creates `.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md` in the workspace and copies a starter prompt to the clipboard, so Claude Desktop gets the exact app URL and runner command instead of trying to infer the URL from Chrome.
+This also creates `.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md` in the workspace and copies a starter prompt to the clipboard. Claude Desktop should ask before launching Selenium Chrome with the default URL, or use an alternate URL provided by the user.
 
 Override the default app URL:
 
@@ -103,7 +103,7 @@ CUCUMBER_TAGS="@TC-001" \
 scripts/run-twentyfive-test.sh
 ```
 
-The setup script starts the dedicated Chrome debug profile on port `9222` before opening Codex or Claude. The runner then attaches Selenium to that browser. For Claude Code and normal Terminal runs, the runner can also auto-launch that browser if it was closed. For Codex, restart the dedicated browser from Terminal before running tests if you closed it:
+The setup script starts the dedicated Chrome debug profile on port `9222` before opening Codex or Claude Code. For Claude Desktop, launch Chrome when the user asks to run a test by asking whether to use the default URL, then running `scripts/start-debug-chrome.sh "<url>"`. The runner then attaches Selenium to that browser. For Claude Code and normal Terminal runs, the runner can also auto-launch that browser if it was closed. For Codex, restart the dedicated browser from Terminal before running tests if you closed it:
 
 ```bash
 scripts/start-debug-chrome.sh "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"

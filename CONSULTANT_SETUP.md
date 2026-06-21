@@ -66,7 +66,7 @@ The script checks or installs:
 - Claude Code
 - Claude for Desktop, when selected
 
-It then asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates this repo, installs the Codex skill copy, starts Chrome with remote debugging on port `9222`, opens the default BTP Golden URL, and launches the selected AI agent in the workspace.
+It then asks which workspace path to use, asks whether to open Claude Code, Claude for Desktop, or Codex, clones/updates this repo, installs the Codex skill copy, and launches the selected AI agent in the workspace. For Codex and Claude Code it also starts Chrome with remote debugging on port `9222` and opens the default BTP Golden URL. For Claude Desktop, Chrome is launched later when the user asks to run a test.
 
 Override defaults like this:
 
@@ -85,7 +85,7 @@ AI_AGENT=codex            # open Codex if installed
 AI_AGENT=none             # do not open an AI agent
 ```
 
-When `AI_AGENT=claude-desktop` is selected, the setup also writes `.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md` in the workspace and copies a starter prompt to the clipboard. Paste that prompt into Claude Desktop, then paste the Confluence/manual test case below it. This gives Claude the exact app URL and tells it to use `.skillautomation.env` and `scripts/run-twentyfive-test.sh` instead of trying to infer the URL from Chrome settings.
+When `AI_AGENT=claude-desktop` is selected, the setup also writes `.skillautomation/CLAUDE_DESKTOP_RUN_TEST.md` in the workspace and copies a starter prompt to the clipboard. Paste that prompt into Claude Desktop, then paste the Confluence/manual test case below it. This tells Claude Desktop to ask before launching Selenium Chrome with the default URL, or to use an alternate URL provided by the user.
 
 For backward compatibility, `OPEN_CLAUDE=0` still skips agent opening:
 
@@ -141,7 +141,7 @@ The wrapper:
 - includes `-Dsurefire.failIfNoSpecifiedTests=false`
 - attaches to the existing consultant Chrome when `USE_DEBUG_CHROME=true`
 
-The setup script starts Chrome before opening Codex or Claude. Claude Code and normal Terminal runs can auto-launch Chrome again if it was closed. For Codex, restart it from Terminal before asking the AI agent to run tests:
+The setup script starts Chrome before opening Codex or Claude Code. For Claude Desktop, Chrome is launched only after the user asks to run a test and confirms the default URL or provides another URL. Claude Code and normal Terminal runs can auto-launch Chrome again if it was closed. For Codex, restart it from Terminal before asking the AI agent to run tests:
 
 ```bash
 scripts/start-debug-chrome.sh "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
