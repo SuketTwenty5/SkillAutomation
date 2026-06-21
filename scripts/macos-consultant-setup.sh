@@ -7,6 +7,7 @@ WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/SkillAutomation}"
 SKILL_NAME="${SKILL_NAME:-selenium-automation}"
 CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
 CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
+CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 OPEN_CLAUDE="${OPEN_CLAUDE:-1}"
 OPEN_AGENT="${OPEN_AGENT:-$OPEN_CLAUDE}"
 AI_AGENT="${AI_AGENT:-}"
@@ -666,21 +667,6 @@ wait_for_chrome_debug_port() {
   return 1
 }
 
-open_app_url_in_debug_chrome() {
-  [[ -n "$SELECTED_APP_URL" ]] || return 0
-
-  log "Opening $SELECTED_APP_LABEL in Chrome"
-  local encoded_url
-  encoded_url="$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SELECTED_APP_URL")"
-
-  if curl -fsS -X PUT "http://127.0.0.1:${CHROME_DEBUG_PORT}/json/new?${encoded_url}" >/dev/null 2>&1; then
-    return
-  fi
-
-  warn "Could not open URL through Chrome debug endpoint; opening through macOS instead."
-  open -a "Google Chrome" "$SELECTED_APP_URL"
-}
-
 start_debug_chrome() {
   if [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]]; then
     log "Skipping Chrome launch for Claude Desktop; it will launch when a test run is requested."
@@ -689,23 +675,34 @@ start_debug_chrome() {
 
   mkdir -p "$CHROME_PROFILE"
 
+  # Reuse an already-running debug session; do not open a duplicate window or tab.
+  # The persistent profile keeps you logged in across runs.
   if lsof -nP -iTCP:"$CHROME_DEBUG_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
-    log "Chrome debug port $CHROME_DEBUG_PORT is already listening"
-    open_app_url_in_debug_chrome
+    log "Reusing existing Chrome debug session on port $CHROME_DEBUG_PORT (sign-in preserved)"
+    return
+  fi
+
+  if [[ ! -x "$CHROME_BIN" ]]; then
+    warn "Google Chrome binary not found at: $CHROME_BIN (set CHROME_BIN to override). Skipping Chrome launch."
     return
   fi
 
   log "Starting Chrome on debug port $CHROME_DEBUG_PORT"
+  # Launch the Chrome binary directly (not 'open -na') with the dedicated profile so
+  # Chrome reuses a single instance instead of forcing duplicate windows.
   local chrome_args=(
     --remote-debugging-port="$CHROME_DEBUG_PORT"
     --user-data-dir="$CHROME_PROFILE"
+    --disable-popup-blocking
+    --no-first-run
+    --no-default-browser-check
   )
 
   if [[ -n "$SELECTED_APP_URL" ]]; then
     chrome_args+=("$SELECTED_APP_URL")
   fi
 
-  open -na "Google Chrome" --args "${chrome_args[@]}"
+  "$CHROME_BIN" "${chrome_args[@]}" >/dev/null 2>&1 &
 
   if ! wait_for_chrome_debug_port; then
     warn "Chrome started, but debug port $CHROME_DEBUG_PORT was not detected yet."

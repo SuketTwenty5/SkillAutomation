@@ -226,22 +226,50 @@ public class IpeSteps {
             return false;
         }
 
-        LoginReadiness readiness = waitForLoginReadiness(Duration.ofSeconds(30), "before " + phase);
+        // Fast path: an existing signed-in session is reused (no re-login needed).
+        LoginReadiness readiness = waitForLoginReadiness(Duration.ofSeconds(10), "before " + phase);
         if (readiness == LoginReadiness.SIGNED_IN) {
-            AllureUtils.logActionF("Existing signed-in local session detected. Skipping automated %s.", phase);
+            AllureUtils.logActionF("Existing signed-in local session detected. Skipping %s.", phase);
             saveScreenshot();
             return true;
         }
 
-        AllureUtils.logActionF("Local run requires manual login. Please log in in the Selenium Chrome window.");
-        if (waitForSignedInOnly(Duration.ofSeconds(30), "after manual login prompt")) {
-            AllureUtils.logActionF("Manual login detected. Continuing test without automated credential entry.");
-            saveScreenshot();
-            return true;
-        }
-
-        Assert.fail("Manual login was not detected within 30 seconds. Log in in the Selenium Chrome window and rerun the test.");
+        // Local runs require a human to complete SSO in the attached Chrome window.
+        // Wait INDEFINITELY — no timeout — until the app shell is signed in, then
+        // continue automatically. This lets the consultant take as long as SSO/MFA needs.
+        AllureUtils.logActionF("Local run: please complete login in the Selenium Chrome window. "
+                + "Waiting until the app is signed in (no timeout)...");
+        waitForSignedInIndefinitely(phase);
+        AllureUtils.logActionF("Manual login detected. Continuing %s.", phase);
+        saveScreenshot();
         return true;
+    }
+
+    /**
+     * Polls until the signed-in app shell is visible. Never times out — local Selenium
+     * runs depend on a human completing SSO login, which can take an arbitrary amount of
+     * time (identity provider, MFA, etc.). A heartbeat is logged roughly every 30s.
+     */
+    private void waitForSignedInIndefinitely(String phase) {
+        long start = System.currentTimeMillis();
+        long iterations = 0;
+        while (true) {
+            try {
+                if (isSignedInAppVisible()) {
+                    AllureUtils.logActionF("Signed-in app shell detected %s after %ds.",
+                            phase, (System.currentTimeMillis() - start) / 1000);
+                    return;
+                }
+            } catch (RuntimeException e) {
+                AllureUtils.logActionF("Waiting for manual login %s: %s", phase, e.getMessage());
+            }
+            // ~every 30s (60 iterations * 500ms) emit a heartbeat so the log shows progress.
+            if (iterations++ % 60 == 0) {
+                AllureUtils.logActionF("Still waiting for manual login %s... (%ds elapsed)",
+                        phase, (System.currentTimeMillis() - start) / 1000);
+            }
+            Selenide.sleep(500);
+        }
     }
 
     private boolean waitForSignedInOnly(Duration timeout, String phase) {
@@ -1554,6 +1582,58 @@ Selenide.sleep(3000);
         executeJavaScript("document.querySelector(\"[class='x-field x-form-item x-form-item-default x-form-readonly x-form-type-text x-box-item x-field-default x-vbox-form-item']\").style.display ='block'");
         $x("//input[@type='file']").uploadFile(new File(filePath));
 
+    }
+
+    @And("^(?:I |)upload CLIN file '(.+)'$")
+    public void uploadClinFile(String filePath) {
+        // Wire the ExtJS filefield change handler for the currently visible upload window,
+        // regardless of its component id (the CLINs "Upload Data from XL or file" window
+        // differs from the BOM import window's iBEImportExcelWindow id).
+        executeJavaScript(
+                "var win = Ext.ComponentQuery.query('window{isVisible(true)}').pop();" +
+                "if (win) {" +
+                "  var ff = win.down('filefield');" +
+                "  if (ff && ff.fileInputEl && typeof win.handleFileSelection === 'function') {" +
+                "    ff.fileInputEl.on('change', win.handleFileSelection, win);" +
+                "  }" +
+                "}");
+        // Reveal any hidden file inputs so Selenide can set the file.
+        executeJavaScript(
+                "document.querySelectorAll(\"input[type='file']\").forEach(function(e){" +
+                "  e.style.display='block'; e.style.visibility='visible'; e.style.opacity=1;" +
+                "});");
+        $x("//*[@role='dialog' and @aria-hidden='false']//input[@type='file']")
+                .uploadFile(new File(filePath));
+    }
+
+    @Then("^(?:I |)verify (\\d+) records are loaded in the (CLINs|import) grid$")
+    public void verifyGridRecordCount(int expected, String which) {
+        // ExtJS grids virtualize their DOM rows, so DOM counting is unreliable for large
+        // grids. Read the record count from the grid's data store instead.
+        String js;
+        if (which.equals("import")) {
+            // grid inside the visible modal window (Select Contract Lines to Import)
+            js = "var w = Ext.ComponentQuery.query('window{isVisible(true)}').pop();" +
+                 "var g = w ? w.down('grid') : null;" +
+                 "if (!g) { return -1; }" +
+                 "var s = g.getStore();" +
+                 "return (s.getTotalCount ? s.getTotalCount() : s.getCount());";
+        } else {
+            // CLINs grid in the active tab panel (exclude grids nested in dialogs)
+            js = "var grids = Ext.ComponentQuery.query('grid{isVisible(true)}');" +
+                 "var best = -1;" +
+                 "grids.forEach(function(g){ try {" +
+                 "  if (g.up('window')) { return; }" +
+                 "  var s = g.getStore();" +
+                 "  var c = (s.getTotalCount ? s.getTotalCount() : s.getCount());" +
+                 "  if (c > best) { best = c; }" +
+                 "} catch (e) {} });" +
+                 "return best;";
+        }
+        Object res = executeJavaScript(js);
+        long actual = (res instanceof Number) ? ((Number) res).longValue() : -1L;
+        logActionF("Record count in %s grid = %s (expected %s)", which, String.valueOf(actual), String.valueOf(expected));
+        Assert.assertEquals("Record count mismatch for " + which + " grid", (long) expected, actual);
     }
 
 //    @And("I wait until uploading completed")

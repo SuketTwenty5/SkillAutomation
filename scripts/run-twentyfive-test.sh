@@ -18,6 +18,7 @@ USE_DEBUG_CHROME="${USE_DEBUG_CHROME:-true}"
 LOCAL_RUN="${LOCAL_RUN:-true}"
 DEBUG_HOLD_BROWSER="${DEBUG_HOLD_BROWSER:-true}"
 CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
+CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 METRICS_ENABLED="${METRICS_ENABLED:-false}"
 CLEAN_FIRST="${CLEAN_FIRST:-}"
 STOP_ON_FAILURE="${STOP_ON_FAILURE:-false}"
@@ -176,13 +177,28 @@ start_chrome_debug() {
     return 1
   fi
 
+  # Never spawn a duplicate: if a debug session is already listening, reuse it.
+  if chrome_debug_ready; then
+    echo "Reusing existing Chrome debug session on port $CHROME_DEBUG_PORT"
+    return 0
+  fi
+
+  if [[ ! -x "$CHROME_BIN" ]]; then
+    echo "ERROR: Google Chrome binary not found at: $CHROME_BIN" >&2
+    return 1
+  fi
+
   mkdir -p "$CHROME_PROFILE"
   echo "Starting Chrome debug profile on port $CHROME_DEBUG_PORT"
-  open -na "Google Chrome" --args \
+  # Launch the Chrome binary directly (not 'open -na') so the dedicated profile
+  # reuses a single instance instead of forcing duplicate windows.
+  "$CHROME_BIN" \
     --remote-debugging-port="$CHROME_DEBUG_PORT" \
     --user-data-dir="$CHROME_PROFILE" \
     --disable-popup-blocking \
-    "$APP_URL"
+    --no-first-run \
+    --no-default-browser-check \
+    "$APP_URL" >/dev/null 2>&1 &
 }
 
 REQUEST_MODE=""
