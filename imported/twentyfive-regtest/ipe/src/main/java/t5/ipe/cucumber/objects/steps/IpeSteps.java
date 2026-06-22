@@ -95,7 +95,8 @@ public class IpeSteps {
     String PG_PASSWORD_INPUT = "//*[@type='password']";
     String PG_SIGN_ON_BUTTON = "//*[@class='ping-button normal allow']";
     private static final int APP_LOAD_RECOVERY_ATTEMPTS = Integer.getInteger("app.load.recovery.attempts", 2);
-    private static final int APP_LOAD_RECOVERY_WAIT_SECONDS = Integer.getInteger("app.load.recovery.wait.seconds", 45);
+    private static final int APP_LOAD_NETWORK_TIMEOUT_SECONDS = Integer.getInteger("app.load.network.timeout.seconds", 300);
+    private static final int APP_LOAD_NETWORK_IDLE_SECONDS = Integer.getInteger("app.load.network.idle.seconds", 5);
 
     public static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().contains("win");
@@ -237,15 +238,6 @@ public class IpeSteps {
             saveScreenshot();
             return true;
         }
-        if (readiness == LoginReadiness.APP_LOADING || readiness == LoginReadiness.UNKNOWN) {
-            readiness = recoverAppLoadIfNeeded(readiness, phase);
-            if (readiness == LoginReadiness.SIGNED_IN) {
-                AllureUtils.logActionF("Existing signed-in local session detected after app-load recovery. Skipping %s.", phase);
-                saveScreenshot();
-                return true;
-            }
-        }
-
         // Local runs require a human to complete SSO in the attached Chrome window.
         // Wait INDEFINITELY — no timeout — until the app shell is signed in, then
         // continue automatically. This lets the consultant take as long as SSO/MFA needs.
@@ -267,6 +259,7 @@ public class IpeSteps {
         long iterations = 0;
         long loadingStartedAt = 0;
         int recoveryAttempts = 0;
+        boolean networkWaitCompleted = false;
         while (true) {
             try {
                 if (isSignedInAppVisible()) {
@@ -280,17 +273,31 @@ public class IpeSteps {
                         AllureUtils.logActionF("Twenty5 app loading mask is visible while waiting for %s.", phase);
                     }
 
-                    long loadingSeconds = (System.currentTimeMillis() - loadingStartedAt) / 1000;
-                    if (loadingSeconds >= APP_LOAD_RECOVERY_WAIT_SECONDS) {
-                        if (recoveryAttempts >= APP_LOAD_RECOVERY_ATTEMPTS) {
+                    if (!networkWaitCompleted) {
+                        boolean quiet = waitForNetworkQuiet(Duration.ofSeconds(APP_LOAD_NETWORK_TIMEOUT_SECONDS),
+                                "while app loading for " + phase);
+                        networkWaitCompleted = true;
+                        if (isSignedInAppVisible()) {
+                            AllureUtils.logActionF("Signed-in app shell detected %s after network wait.", phase);
+                            return;
+                        }
+                        if (!quiet && isAppLoadingVisible()) {
                             failStuckAppLoad(phase);
                         }
+                    }
+
+                    if (isAppLoadingVisible() && loadingSeconds() >= APP_LOAD_NETWORK_TIMEOUT_SECONDS) {
+                        failStuckAppLoad(phase);
+                    }
+
+                    if (isAppLoadingVisible() && recoveryAttempts < APP_LOAD_RECOVERY_ATTEMPTS) {
                         recoveryAttempts++;
                         recoverAppLoad(recoveryAttempts, phase);
-                        loadingStartedAt = 0;
+                        networkWaitCompleted = false;
                     }
                 } else {
                     loadingStartedAt = 0;
+                    networkWaitCompleted = false;
                 }
             } catch (RuntimeException e) {
                 AllureUtils.logActionF("Waiting for signed-in app shell %s: %s", phase, e.getMessage());
@@ -391,8 +398,10 @@ public class IpeSteps {
         LoginReadiness currentReadiness = readiness;
         for (int attempt = 1; attempt <= APP_LOAD_RECOVERY_ATTEMPTS; attempt++) {
             recoverAppLoad(attempt, phase);
-            currentReadiness = waitForLoginReadiness(Duration.ofSeconds(APP_LOAD_RECOVERY_WAIT_SECONDS),
+            waitForNetworkQuiet(Duration.ofSeconds(APP_LOAD_NETWORK_TIMEOUT_SECONDS),
                     "after app-load recovery " + attempt + " for " + phase);
+            currentReadiness = waitForLoginReadiness(Duration.ofSeconds(5),
+                    "after network quiet for app-load recovery " + attempt + " for " + phase);
             if (currentReadiness == LoginReadiness.SIGNED_IN || currentReadiness == LoginReadiness.LOGIN_FORM) {
                 return currentReadiness;
             }
@@ -410,11 +419,7 @@ public class IpeSteps {
                 phase, attempt, APP_LOAD_RECOVERY_ATTEMPTS, currentUrl);
         saveScreenshot();
 
-        if (attempt == 1 && currentUrl != null && !currentUrl.trim().isEmpty() && !"about:blank".equalsIgnoreCase(currentUrl)) {
-            Selenide.refresh();
-        } else {
-            open(WebUtil.getSiteUrl());
-        }
+        executeJavaScript("window.location.replace(arguments[0]);", WebUtil.getSiteUrl());
         Selenide.sleep(1000);
     }
 
@@ -422,11 +427,129 @@ public class IpeSteps {
         saveScreenshot();
         throw new AssertionError("Twenty5 app stayed on the loading screen while waiting for " + phase
                 + " after " + APP_LOAD_RECOVERY_ATTEMPTS + " recovery attempt(s). Current URL: "
-                + WebDriverRunner.url() + ". Refresh the dedicated Selenium Chrome profile or rerun with AUTO_START_CHROME=true.");
+                + WebDriverRunner.url() + ". Network was observed for up to "
+                + APP_LOAD_NETWORK_TIMEOUT_SECONDS + " seconds before stopping.");
     }
 
     private boolean isAppLoadingVisible() {
         return firstVisibleElement(APP_LOADING_MASK) != null;
+    }
+
+    private long loadingSeconds() {
+        return 0;
+    }
+
+    private boolean waitForNetworkQuiet(Duration timeout, String phase) {
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+        long quietStartedAt = 0;
+        long lastResourceCount = -1;
+        long lastPending = -1;
+        long lastLogAt = 0;
+
+        AllureUtils.logActionF("Waiting up to %ds for Twenty5 network calls to finish %s.",
+                timeout.toSeconds(), phase);
+
+        while (System.currentTimeMillis() <= deadline) {
+            try {
+                Map<String, Object> snapshot = readNetworkSnapshot();
+                long resourceCount = longValue(snapshot.get("resourceCount"));
+                long pending = longValue(snapshot.get("pending"));
+                String readyState = String.valueOf(snapshot.get("readyState"));
+                String lastUrl = String.valueOf(snapshot.get("lastUrl"));
+
+                boolean changed = resourceCount != lastResourceCount || pending != lastPending;
+                if (changed) {
+                    quietStartedAt = 0;
+                    lastResourceCount = resourceCount;
+                    lastPending = pending;
+                    AllureUtils.logActionF("Network activity %s: readyState=%s pending=%d resources=%d last=%s",
+                            phase, readyState, pending, resourceCount, abbreviate(lastUrl, 140));
+                } else if (pending == 0 && "complete".equalsIgnoreCase(readyState)) {
+                    if (quietStartedAt == 0) {
+                        quietStartedAt = System.currentTimeMillis();
+                    }
+                    long quietSeconds = (System.currentTimeMillis() - quietStartedAt) / 1000;
+                    if (quietSeconds >= APP_LOAD_NETWORK_IDLE_SECONDS) {
+                        AllureUtils.logActionF("Network is quiet %s after %ds idle. resources=%d",
+                                phase, quietSeconds, resourceCount);
+                        return true;
+                    }
+                } else {
+                    quietStartedAt = 0;
+                }
+
+                long now = System.currentTimeMillis();
+                if (now - lastLogAt >= 30000) {
+                    long elapsedSeconds = (now - (deadline - timeout.toMillis())) / 1000;
+                    AllureUtils.logActionF("Still waiting for network %s... (%ds elapsed, pending=%d, resources=%d)",
+                            phase, elapsedSeconds, pending, resourceCount);
+                    lastLogAt = now;
+                }
+            } catch (RuntimeException e) {
+                AllureUtils.logActionF("Network quiet check still waiting %s: %s", phase, e.getMessage());
+            }
+
+            Selenide.sleep(1000);
+        }
+
+        AllureUtils.logActionF("Network did not become quiet %s within %ds.",
+                phase, timeout.toSeconds());
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> readNetworkSnapshot() {
+        return executeJavaScript(
+                "return (function(){"
+                        + "var state=window.__codexNetwork;"
+                        + "if(!state){"
+                        + "state=window.__codexNetwork={pending:0,completed:0,errors:0,lastActivity:Date.now(),lastUrl:'',installed:false};"
+                        + "}"
+                        + "if(!state.installed){"
+                        + "state.installed=true;"
+                        + "if(window.fetch){"
+                        + "var originalFetch=window.fetch;"
+                        + "window.fetch=function(){"
+                        + "var url=(arguments[0]&&arguments[0].url)||arguments[0]||'';"
+                        + "state.pending++;state.lastActivity=Date.now();state.lastUrl=String(url);"
+                        + "return originalFetch.apply(this,arguments).then(function(response){"
+                        + "state.pending=Math.max(0,state.pending-1);state.completed++;state.lastActivity=Date.now();return response;"
+                        + "},function(error){state.pending=Math.max(0,state.pending-1);state.errors++;state.lastActivity=Date.now();throw error;});"
+                        + "};"
+                        + "}"
+                        + "if(window.XMLHttpRequest){"
+                        + "var originalOpen=XMLHttpRequest.prototype.open;"
+                        + "var originalSend=XMLHttpRequest.prototype.send;"
+                        + "XMLHttpRequest.prototype.open=function(method,url){this.__codexUrl=url;return originalOpen.apply(this,arguments);};"
+                        + "XMLHttpRequest.prototype.send=function(){"
+                        + "var xhr=this;state.pending++;state.lastActivity=Date.now();state.lastUrl=String(xhr.__codexUrl||'');"
+                        + "xhr.addEventListener('loadend',function(){state.pending=Math.max(0,state.pending-1);state.completed++;state.lastActivity=Date.now();state.lastUrl=String(xhr.__codexUrl||state.lastUrl||'');},{once:true});"
+                        + "return originalSend.apply(this,arguments);"
+                        + "};"
+                        + "}"
+                        + "}"
+                        + "var entries=(window.performance&&performance.getEntriesByType)?performance.getEntriesByType('resource'):[];"
+                        + "var last=entries.length?entries[entries.length-1].name:state.lastUrl;"
+                        + "return {readyState:document.readyState,pending:state.pending,completed:state.completed,errors:state.errors,resourceCount:entries.length,lastActivity:state.lastActivity,lastUrl:last};"
+                        + "})();");
+    }
+
+    private long longValue(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private String abbreviate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength - 3) + "...";
     }
 
     private boolean clickIfVisible(String xpath, String label) {

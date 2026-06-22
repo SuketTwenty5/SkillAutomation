@@ -8,7 +8,8 @@ ENV_FILE="${ENV_FILE:-$REPO_ROOT/.skillautomation.env}"
 # shellcheck source=scripts/lib/env.sh
 source "$SCRIPT_DIR/lib/env.sh"
 source_env_preserving_caller "$ENV_FILE" \
-  APP_URL SELECTED_APP_URL CHROME_DEBUG_PORT CHROME_PROFILE CHROME_BIN
+  APP_URL SELECTED_APP_URL CHROME_DEBUG_PORT CHROME_PROFILE CHROME_BIN \
+  CLEAR_CHROME_CACHE FRESH_CHROME_PROFILE FRESH_CHROME_ROOT FRESH_CHROME_SESSION RESET_FRESH_CHROME_PROFILE
 
 APP_URL="${1:-${APP_URL:-${SELECTED_APP_URL:-}}}"
 CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
@@ -21,4 +22,8 @@ source "$SCRIPT_DIR/lib/chrome-debug.sh"
 start_chrome_debug "$APP_URL"
 
 echo "Chrome debug endpoint is ready at http://127.0.0.1:$CHROME_DEBUG_PORT."
-echo "Sign in once in this window; the profile keeps you logged in for later runs."
+if [[ "${FRESH_CHROME_PROFILE:-false}" == "true" ]]; then
+  echo "Sign in in this window. This managed fresh profile keeps cookies/cache/local storage: $CHROME_PROFILE"
+else
+  echo "Sign in once in this window; the profile keeps you logged in for later runs."
+fi

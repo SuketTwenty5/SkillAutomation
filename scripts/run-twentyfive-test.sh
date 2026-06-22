@@ -11,7 +11,7 @@ source "$SCRIPT_DIR/lib/env.sh"
 source_env_preserving_caller "$ENV_FILE" \
   APP_URL SELECTED_APP_URL CHROME_DEBUG_PORT USE_DEBUG_CHROME LOCAL_RUN \
   DEBUG_HOLD_BROWSER CHROME_PROFILE CHROME_BIN METRICS_ENABLED CLEAN_FIRST \
-  STOP_ON_FAILURE DRY_RUN AUTO_START_CHROME CLEAR_CHROME_CACHE TEST_SUITE Test_Suite SUITE \
+  STOP_ON_FAILURE DRY_RUN AUTO_START_CHROME CLEAR_CHROME_CACHE FRESH_CHROME_PROFILE FRESH_CHROME_ROOT FRESH_CHROME_SESSION RESET_FRESH_CHROME_PROFILE TEST_SUITE Test_Suite SUITE \
   CUCUMBER_TAGS
 
 DEFAULT_APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
@@ -55,6 +55,13 @@ Environment:
   CHROME_PROFILE      Chrome profile used for Selenium attachment.
   CLEAR_CHROME_CACHE  Clear app/browser cache in CHROME_PROFILE before launching Chrome,
                       while preserving saved cookies/login. Default false.
+  FRESH_CHROME_PROFILE
+                      Use a managed fresh Chrome profile separate from the default.
+                      It preserves cookies, cache, and local storage for repeat runs.
+                      Refuses to reuse an existing browser on port 9222. Default false.
+  RESET_FRESH_CHROME_PROFILE
+                      With FRESH_CHROME_PROFILE=true, create a brand-new managed
+                      profile for this session. Default false.
   METRICS_ENABLED     Enable InfluxDB writes. Default false for local runner.
   CLEAN_FIRST         Run "mvn clean test" for the first tag. Default true for suites.
   STOP_ON_FAILURE     Stop a suite after the first failing tag. Default false.

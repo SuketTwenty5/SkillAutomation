@@ -5,6 +5,10 @@ CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
 CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 LOGIN_WAIT_SECONDS="${LOGIN_WAIT_SECONDS:-30}"
 CLEAR_CHROME_CACHE="${CLEAR_CHROME_CACHE:-false}"
+FRESH_CHROME_PROFILE="${FRESH_CHROME_PROFILE:-false}"
+FRESH_CHROME_ROOT="${FRESH_CHROME_ROOT:-$HOME/.selenium-ai-chrome-sessions}"
+FRESH_CHROME_SESSION="${FRESH_CHROME_SESSION:-latest}"
+RESET_FRESH_CHROME_PROFILE="${RESET_FRESH_CHROME_PROFILE:-false}"
 
 chrome_debug_ready() {
   curl -fsS "http://127.0.0.1:${CHROME_DEBUG_PORT}/json/version" >/dev/null 2>&1
@@ -28,6 +32,16 @@ start_chrome_debug() {
     echo "ERROR: Chrome auto-launch currently supports macOS only." >&2
     return 2
   fi
+
+  if [[ "$FRESH_CHROME_PROFILE" == "true" ]]; then
+    if chrome_debug_ready; then
+      echo "ERROR: FRESH_CHROME_PROFILE=true was requested, but Chrome debug is already running on port $CHROME_DEBUG_PORT." >&2
+      echo "Close the existing Selenium Chrome window before starting a fresh test session." >&2
+      return 4
+    fi
+  fi
+
+  configure_fresh_chrome_profile_if_requested
 
   if chrome_debug_ready; then
     echo "Reusing existing Chrome debug session on port $CHROME_DEBUG_PORT."
@@ -57,6 +71,32 @@ start_chrome_debug() {
 
   "$CHROME_BIN" "${chrome_args[@]}" >/dev/null 2>&1 &
   wait_for_chrome_debug
+}
+
+configure_fresh_chrome_profile_if_requested() {
+  [[ "$FRESH_CHROME_PROFILE" == "true" ]] || return 0
+
+  local root="${FRESH_CHROME_ROOT%/}"
+  local pointer_file="$root/$FRESH_CHROME_SESSION.path"
+  mkdir -p "$root"
+
+  if [[ "$RESET_FRESH_CHROME_PROFILE" != "true" && -f "$pointer_file" ]]; then
+    local saved_profile
+    saved_profile="$(cat "$pointer_file")"
+    if [[ -n "$saved_profile" && -d "$saved_profile" ]]; then
+      CHROME_PROFILE="$saved_profile"
+      export CHROME_PROFILE
+      echo "Reusing saved fresh Chrome profile for session '$FRESH_CHROME_SESSION': $CHROME_PROFILE"
+      echo "Cookies, cache, and local storage are preserved for faster repeat login."
+      return 0
+    fi
+  fi
+
+  CHROME_PROFILE="$(mktemp -d "$root/$FRESH_CHROME_SESSION.XXXXXX")"
+  export CHROME_PROFILE
+  printf '%s\n' "$CHROME_PROFILE" > "$pointer_file"
+  echo "Using new fresh Chrome profile for session '$FRESH_CHROME_SESSION': $CHROME_PROFILE"
+  echo "This profile will be reused next time to keep cookies, cache, and local storage."
 }
 
 clear_chrome_cache_if_requested() {
@@ -137,6 +177,14 @@ ensure_chrome_debug() {
   local app_url="$1"
   local auto_start="${2:-false}"
   local assume_yes="${3:-false}"
+
+  if [[ "$FRESH_CHROME_PROFILE" == "true" ]]; then
+    if chrome_debug_ready; then
+      echo "ERROR: FRESH_CHROME_PROFILE=true was requested, but Chrome debug is already running on port $CHROME_DEBUG_PORT." >&2
+      echo "Close the existing Selenium Chrome window before starting a fresh test session." >&2
+      return 4
+    fi
+  fi
 
   if chrome_debug_ready; then
     echo "Chrome debug endpoint is ready at http://127.0.0.1:$CHROME_DEBUG_PORT."
