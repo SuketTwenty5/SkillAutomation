@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.SelenideElement;
 
 import java.util.Map;
@@ -22,7 +24,7 @@ public class ProcurementAndProductionTable extends LaborTable {
         if (!element.exists())
             return -1;
 
-        return $$x(ALL_ROWS_XPATH).indexOf(element.scrollIntoView(true));
+        return indexOf($$x(ALL_ROWS_XPATH), element.scrollIntoView(true));
     }
 
     @Override

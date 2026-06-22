@@ -1,6 +1,8 @@
 
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.Keys;
@@ -133,7 +135,7 @@ public class ServiceTable extends BaseWebElement implements EditableTable, Reada
     private int findHeaderIndexByName(ElementsCollection headers, String columnName) {
         return headers.stream()
                 .filter(header -> header.getAttribute("outerText").equals(columnName))
-                .mapToInt(headers::indexOf)
+                .mapToInt(header -> indexOf(headers, header))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Header with name '" + columnName + "' not found on the page. Please check screenshot."));
     }
@@ -155,7 +157,7 @@ public class ServiceTable extends BaseWebElement implements EditableTable, Reada
         while (index == -1 && firstRowHash != curWindowRows.get(0).hashCode()) {
             try {
                 firstRowHash = curWindowRows.get(0).hashCode();
-                index = curWindowRows.indexOf($x(rowXPath));
+                index = indexOf(curWindowRows, $x(rowXPath));
             } catch (Throwable e) {
                 curWindowRows.get(curWindowRows.size() - 1).scrollIntoView(true);
             }

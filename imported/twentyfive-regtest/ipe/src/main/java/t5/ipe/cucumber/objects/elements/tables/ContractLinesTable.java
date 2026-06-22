@@ -1,7 +1,10 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import t5.ipe.cucumber.core.web.util.AllureUtils;
@@ -23,14 +26,14 @@ public class ContractLinesTable extends LaborTable {
     @Override
     public int getColumnIndexByName(String columnName) {
         Selenide.sleep(5000);
-        List<SelenideElement> headers = $$(By.xpath(HEADER_COLUMN_XPATH)).shouldHave(sizeGreaterThan(2), Duration.ofSeconds(20));
+        ElementsCollection headers = $$(By.xpath(HEADER_COLUMN_XPATH)).shouldHave(sizeGreaterThan(2), Duration.ofSeconds(20));
         return findHeaderIndexByName(headers, columnName);
     }
 
-    private int findHeaderIndexByName(List<SelenideElement> headers, String columnName) {
+    private int findHeaderIndexByName(ElementsCollection headers, String columnName) {
         return headers.stream()
                 .filter(header -> Objects.equals(header.getAttribute("outerText"), columnName))
-                .mapToInt(headers::indexOf)
+                .mapToInt(header -> indexOf(headers, header))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Header with name '" + columnName + "' not found on the page. Please check screenshot."));
     }
@@ -108,7 +111,7 @@ public class ContractLinesTable extends LaborTable {
         String rowXPath = appendXPathByFilter(ALL_ROWS_XPATH, filter);
         try {
             $x(rowXPath).shouldBe(visible, Duration.ofSeconds(50));
-            index = $$x(ALL_ROWS_XPATH).indexOf($x(rowXPath).scrollIntoView(true));
+            index = indexOf($$x(ALL_ROWS_XPATH), $x(rowXPath).scrollIntoView(true));
 
         } catch (Throwable e) {
             throw new RuntimeException(String.format("Row not found by xpath, row does not exist [%s]", rowXPath));

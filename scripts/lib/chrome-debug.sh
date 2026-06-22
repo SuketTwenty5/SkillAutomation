@@ -4,6 +4,7 @@ CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
 CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
 CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 LOGIN_WAIT_SECONDS="${LOGIN_WAIT_SECONDS:-30}"
+CLEAR_CHROME_CACHE="${CLEAR_CHROME_CACHE:-false}"
 
 chrome_debug_ready() {
   curl -fsS "http://127.0.0.1:${CHROME_DEBUG_PORT}/json/version" >/dev/null 2>&1
@@ -39,6 +40,7 @@ start_chrome_debug() {
     return 2
   fi
 
+  clear_chrome_cache_if_requested
   mkdir -p "$CHROME_PROFILE"
   echo "Starting dedicated Chrome debug profile on port $CHROME_DEBUG_PORT."
   local chrome_args=(
@@ -55,6 +57,39 @@ start_chrome_debug() {
 
   "$CHROME_BIN" "${chrome_args[@]}" >/dev/null 2>&1 &
   wait_for_chrome_debug
+}
+
+clear_chrome_cache_if_requested() {
+  [[ "$CLEAR_CHROME_CACHE" == "true" ]] || return 0
+
+  if [[ -z "$CHROME_PROFILE" || "$CHROME_PROFILE" == "/" ]]; then
+    echo "ERROR: Refusing to clear Chrome cache because CHROME_PROFILE is unsafe: $CHROME_PROFILE" >&2
+    return 2
+  fi
+
+  if chrome_debug_ready; then
+    echo "WARN: CLEAR_CHROME_CACHE=true was requested, but Chrome debug is already running."
+    echo "      Close the Selenium Chrome window and rerun to clear cache before launch."
+    return 0
+  fi
+
+  echo "Clearing dedicated Chrome cache for profile: $CHROME_PROFILE"
+  local cache_paths=(
+    "$CHROME_PROFILE/Default/Cache"
+    "$CHROME_PROFILE/Default/Code Cache"
+    "$CHROME_PROFILE/Default/GPUCache"
+    "$CHROME_PROFILE/Default/Service Worker/CacheStorage"
+    "$CHROME_PROFILE/Default/Service Worker/ScriptCache"
+    "$CHROME_PROFILE/GrShaderCache"
+    "$CHROME_PROFILE/ShaderCache"
+  )
+
+  local path
+  for path in "${cache_paths[@]}"; do
+    if [[ -e "$path" ]]; then
+      rm -rf -- "$path"
+    fi
+  done
 }
 
 chrome_open_urls() {

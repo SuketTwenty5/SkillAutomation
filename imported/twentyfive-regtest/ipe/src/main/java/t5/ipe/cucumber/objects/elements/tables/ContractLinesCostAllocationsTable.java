@@ -1,6 +1,8 @@
 
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.Keys;
@@ -62,13 +64,13 @@ public class ContractLinesCostAllocationsTable extends ContractLinesTable {
                 .filter(x -> x.getAttribute("textContent").contains(columnName))
                 .findFirst()
                 .get();
-        return headers.indexOf(header);
+        return indexOf(headers, header);
     }
 
     @Override
     public int getRowIndex(Map<String, String> filter) {
         String rowXPath = appendXPathByFilter(ALL_ROWS_XPATH, filter);
-        return $$x(ALL_ROWS_XPATH).indexOf($x(rowXPath).scrollIntoView(true));
+        return indexOf($$x(ALL_ROWS_XPATH), $x(rowXPath).scrollIntoView(true));
     }
 
     private String getCellXpath(String columnName, Map<String, String> rowFilter) {

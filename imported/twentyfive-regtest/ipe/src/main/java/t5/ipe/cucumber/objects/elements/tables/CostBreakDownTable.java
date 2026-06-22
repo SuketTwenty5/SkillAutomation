@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
@@ -307,7 +309,7 @@ public class CostBreakDownTable  extends BaseWebElement implements EditableTable
                     })
                     .map(header -> {
                         try {
-                            int index = headers.indexOf(header);
+                            int index = indexOf(headers, header);
                             AllureUtils.logActionF("Matched header at index: {}", index);
                             return index;
                         } catch (Throwable e) {
@@ -366,7 +368,7 @@ public class CostBreakDownTable  extends BaseWebElement implements EditableTable
         if (normalFilter.isEmpty()) {
             int rowIndex = -1;
             try {
-                rowIndex = $$x(LEFT_ROWS_XPATH).indexOf(elementLeft.scrollIntoView(true));
+                rowIndex = indexOf($$x(LEFT_ROWS_XPATH), elementLeft.scrollIntoView(true));
             } catch (com.codeborne.selenide.ex.ElementNotFound | org.openqa.selenium.NoSuchElementException e) {
                 System.err.println("❌ Element not found while trying to find index in LEFT_ROWS_XPATH: " + e.getMessage());
                 e.printStackTrace();
@@ -378,7 +380,7 @@ public class CostBreakDownTable  extends BaseWebElement implements EditableTable
         } else if (lockedFilter.isEmpty()) {
             int rowIndex = -1;
             try {
-                rowIndex = $$x(RIGHT_ROWS_XPATH).indexOf(elementRight.scrollIntoView(true));
+                rowIndex = indexOf($$x(RIGHT_ROWS_XPATH), elementRight.scrollIntoView(true));
             } catch (com.codeborne.selenide.ex.ElementNotFound | org.openqa.selenium.NoSuchElementException e) {
                 System.err.println("❌ Element not found while trying to find index in LEFT_ROWS_XPATH: " + e.getMessage());
                 e.printStackTrace();
@@ -388,13 +390,13 @@ public class CostBreakDownTable  extends BaseWebElement implements EditableTable
             }
             return rowIndex;
         } else {
-            int leftIndex = $$x(LEFT_ROWS_XPATH).indexOf(elementLeft.scrollIntoView(true));
-            int rightIndex = $$x(RIGHT_ROWS_XPATH).indexOf(elementRight.scrollIntoView(true));
+            int leftIndex = indexOf($$x(LEFT_ROWS_XPATH), elementLeft.scrollIntoView(true));
+            int rightIndex = indexOf($$x(RIGHT_ROWS_XPATH), elementRight.scrollIntoView(true));
             if(leftIndex!=rightIndex){
                 throw new RuntimeException("❌ Row element not found in either table");
             }
             else{
-                return $$x(RIGHT_ROWS_XPATH).indexOf(elementRight.scrollIntoView(true));
+                return indexOf($$x(RIGHT_ROWS_XPATH), elementRight.scrollIntoView(true));
             }
         }
     }
@@ -410,7 +412,7 @@ public class CostBreakDownTable  extends BaseWebElement implements EditableTable
 //        }
 ////        AllureUtils.logActionF("xpath of all rows : ", ALL_ROWS_XPATH);
 ////        element.scrollIntoView(true);
-//        return $$x(ALL_ROWS_XPATH).indexOf(element.scrollIntoView(true));
+//        return indexOf($$x(ALL_ROWS_XPATH), element.scrollIntoView(true));
 //    }
 
 

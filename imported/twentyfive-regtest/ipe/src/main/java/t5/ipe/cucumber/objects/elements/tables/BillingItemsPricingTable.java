@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
@@ -209,7 +211,7 @@ public class BillingItemsPricingTable extends BaseWebElement implements Editable
                     SelenideElement span = header.$x(".//span[@class='x-column-header-text-inner']");
                     return span.exists() && columnName.equals(span.getText());
                 })
-                .mapToInt(headers::indexOf)
+                .mapToInt(header -> indexOf(headers, header))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Header with name '" + columnName + "' not found on the page. Please check screenshot."));
     }
@@ -225,7 +227,7 @@ public class BillingItemsPricingTable extends BaseWebElement implements Editable
         }
 //        AllureUtils.logActionF("xpath of all rows : ", ALL_ROWS_XPATH);
 //        element.scrollIntoView(true);
-        return $$x(ALL_ROWS_XPATH).filter(Condition.visible).indexOf(element.scrollIntoView(true));
+        return indexOf($$x(ALL_ROWS_XPATH).filter(Condition.visible), element.scrollIntoView(true));
     }
 
 

@@ -11,7 +11,7 @@ source "$SCRIPT_DIR/lib/env.sh"
 source_env_preserving_caller "$ENV_FILE" \
   APP_URL SELECTED_APP_URL CHROME_DEBUG_PORT USE_DEBUG_CHROME LOCAL_RUN \
   DEBUG_HOLD_BROWSER CHROME_PROFILE CHROME_BIN METRICS_ENABLED CLEAN_FIRST \
-  STOP_ON_FAILURE DRY_RUN AUTO_START_CHROME TEST_SUITE Test_Suite SUITE \
+  STOP_ON_FAILURE DRY_RUN AUTO_START_CHROME CLEAR_CHROME_CACHE TEST_SUITE Test_Suite SUITE \
   CUCUMBER_TAGS
 
 DEFAULT_APP_URL="https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
@@ -53,6 +53,8 @@ Environment:
   AUTO_START_CHROME   Start Chrome debug profile if port is not listening. Default false.
                       Set to false to require a manually started debug browser.
   CHROME_PROFILE      Chrome profile used for Selenium attachment.
+  CLEAR_CHROME_CACHE  Clear app/browser cache in CHROME_PROFILE before launching Chrome,
+                      while preserving saved cookies/login. Default false.
   METRICS_ENABLED     Enable InfluxDB writes. Default false for local runner.
   CLEAN_FIRST         Run "mvn clean test" for the first tag. Default true for suites.
   STOP_ON_FAILURE     Stop a suite after the first failing tag. Default false.
@@ -157,6 +159,31 @@ EOF
 
 safe_log_token() {
   printf '%s' "$1" | tr -c 'A-Za-z0-9_.-' '_'
+}
+
+file_mtime_epoch() {
+  local path="$1"
+  if [[ ! -f "$path" ]]; then
+    echo 0
+    return
+  fi
+  if stat -f %m "$path" >/dev/null 2>&1; then
+    stat -f %m "$path"
+  else
+    stat -c %Y "$path"
+  fi
+}
+
+json_file_is_valid() {
+  local path="$1"
+  [[ -s "$path" ]] || return 1
+  python3 - "$path" <<'PY' >/dev/null 2>&1
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    json.load(handle)
+PY
 }
 
 REQUEST_MODE=""
@@ -280,11 +307,16 @@ run_tag() {
   local safe_tag
   local log_file
   local mvn_args
+  local cucumber_json
+  local run_started_epoch
+  local report_mtime
 
   if [[ "$CLEAN_FIRST" == "true" && "$index" -eq 0 ]]; then
     goals=(clean test)
   fi
 
+  cucumber_json="$TEST_ROOT/tests/target/cucumber-reports/Cucumber.json"
+  run_started_epoch="$(date +%s)"
   safe_tag="$(safe_log_token "$tag")"
   log_file="$LOGS_DIR/mvn_$(date +%Y%m%d_%H%M%S)_$((index + 1))_${safe_tag}.log"
 
@@ -331,9 +363,23 @@ run_tag() {
     mvn_exit=$?
   fi
 
-  if [[ -f "$TEST_ROOT/tests/target/cucumber-reports/Cucumber.json" ]]; then
+  if [[ -f "$cucumber_json" ]]; then
+    report_mtime="$(file_mtime_epoch "$cucumber_json")"
+  else
+    report_mtime=0
+  fi
+
+  if [[ -f "$cucumber_json" && "$report_mtime" -ge "$run_started_epoch" ]]; then
+    if ! json_file_is_valid "$cucumber_json"; then
+      echo "WARN: Cucumber JSON report is empty or incomplete after tag $tag; leaving reports/latest.md unchanged."
+      echo "      Check Maven log for interrupted/login-blocked run: $log_file"
+      return "$mvn_exit"
+    fi
     python3 "$SCRIPT_DIR/generate-report.py" \
-      "$TEST_ROOT/tests/target/cucumber-reports/Cucumber.json" || true
+      "$cucumber_json" || true
+  elif [[ -f "$cucumber_json" ]]; then
+    echo "WARN: Cucumber JSON report is stale after tag $tag; leaving reports/latest.md unchanged."
+    echo "      Check Maven log for compile/setup failure: $log_file"
   else
     echo "WARN: Cucumber JSON report not found after tag $tag"
   fi

@@ -1,6 +1,8 @@
 
 package t5.ipe.cucumber.objects.elements;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.NoSuchElementException;
@@ -52,7 +54,7 @@ public class WorkbenchTable extends BaseWebElement implements EditableTable, Rea
             int yearInd = getColumnYearIndexByName(firstPart) + 1;
             int columnInd = getColumnNameIndexByNameWithoutMonth(firstPart, secondPart) + 1;
             String xpath = YEAR_HEADER_COLUMN_XPATH + "[" + yearInd + "]" + MEASURES_HEADER_COLUMN_XPATH + "[" + columnInd + "]";
-            return $$x(ALL_HEADER_COLUMN_XPATH).indexOf($x(xpath).scrollIntoView(true));
+            return indexOf($$x(ALL_HEADER_COLUMN_XPATH), $x(xpath).scrollIntoView(true));
         } else {
             String[] arr = columnName.split(" ", 2);
             AllureUtils.logActionF("Array of colum name"+ Arrays.toString(arr));
@@ -62,7 +64,7 @@ public class WorkbenchTable extends BaseWebElement implements EditableTable, Rea
                 int yearInd = getColumnYearIndexByName(firstPart) + 1;
                 int columnInd = getColumnNameIndexByNameWithoutMonth(firstPart, secondPart) + 1;
                 String xpath = YEAR_HEADER_COLUMN_XPATH + "[" + yearInd + "]" + MEASURES_HEADER_COLUMN_XPATH + "[" + columnInd + "]";
-                int indexOnlyYear = $$x(ALL_HEADER_COLUMN_XPATH).indexOf($x(xpath).scrollIntoView(true));
+                int indexOnlyYear = indexOf($$x(ALL_HEADER_COLUMN_XPATH), $x(xpath).scrollIntoView(true));
                 int indexBeforeYear = countStringsBeforeFirstNumber($$x(YEAR_HEADER_COLUMN_XPATH));
                 AllureUtils.logActionF("Column '%s' index is %d + %d", columnName, indexOnlyYear, indexBeforeYear);
                 if (arr[1].contains("Qtr:")) {
@@ -113,7 +115,7 @@ public class WorkbenchTable extends BaseWebElement implements EditableTable, Rea
                 .filter(x -> x.$x("./*[@data-ref='titleEl']").getAttribute("textContent").contains(columnName))
                 .findFirst()
                 .get();
-        return headers.indexOf(header);
+        return indexOf(headers, header);
     }
 
     public int getLockedColumnIndex(String columnName) {
@@ -123,7 +125,7 @@ public class WorkbenchTable extends BaseWebElement implements EditableTable, Rea
                 .filter(x -> x.getAttribute("textContent").contains(columnName))
                 .findFirst()
                 .get();
-        return headers.indexOf(header);
+        return indexOf(headers, header);
     }
     public int getColumnNameIndexByNameWithoutMonth(String firstValue, String secondValue) {
         int yearInd = getColumnYearIndexByName(firstValue) + 1;
@@ -134,13 +136,13 @@ public class WorkbenchTable extends BaseWebElement implements EditableTable, Rea
                 .filter(x -> x.getAttribute("textContent") != null && x.getAttribute("textContent").contains(secondValue))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("No header found with text: " + secondValue));
-        return headers.indexOf(header);
+        return indexOf(headers, header);
     }
 
     @Override
     public int getRowIndex(Map<String, String> filter) {
         String rowXPath = appendXPathByFilter(ALL_ROWS_XPATH, filter);
-        return $$x(ALL_ROWS_XPATH).indexOf($x(rowXPath).scrollIntoView(true));
+        return indexOf($$x(ALL_ROWS_XPATH), $x(rowXPath).scrollIntoView(true));
     }
 
     private String getCellXpath(String columnName, Map<String, String> rowFilter) {

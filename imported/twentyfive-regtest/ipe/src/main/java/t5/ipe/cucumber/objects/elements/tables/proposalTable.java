@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import t5.ipe.cucumber.core.web.elements.BaseWebElement;
@@ -24,7 +26,7 @@ public class proposalTable extends BaseWebElement implements EditableTable, Read
                 .findFirst();
         if (headerOptional.isPresent()) {
             SelenideElement header = headerOptional.get();
-            return headers.indexOf(header);
+            return indexOf(headers, header);
         } else {
             AllureUtils.saveScreenshot();
             AllureUtils.logActionF("Column with name %s is not displayed on the page. Perhaps the workbench table did not appear. Please check the screenshot.", columnName);

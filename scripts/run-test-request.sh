@@ -109,7 +109,12 @@ if [[ -z "$REQUEST" ]]; then
   exit 2
 fi
 
-eval "$("$RESOLVER" --shell "$REQUEST")"
+if RESOLVED_SHELL="$("$RESOLVER" --shell "$REQUEST")"; then
+  :
+else
+  exit $?
+fi
+eval "$RESOLVED_SHELL"
 
 RUN_URL="$RESOLVED_DEFAULT_URL"
 if [[ -n "$URL_OVERRIDE" ]]; then

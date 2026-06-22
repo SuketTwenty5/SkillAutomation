@@ -90,9 +90,12 @@ public class IpeSteps {
     String APP_TITLE_TOOLBAR = "//div[contains(@class, 'x-PricingAppNavTitleToolbar')]";
     String APP_TOP_MENU_BUTTON = "//a[@aria-hidden='false' and contains(@class,'ibeTopMenuButton')]";
     String PROPOSALS_TAB = "//a//span[contains(translate(normalize-space(.), 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'PROPOSALS')]";
+    String APP_LOADING_MASK = "//*[contains(normalize-space(.), 'Loading Twenty5') or (contains(@class,'x-mask-msg-text') and contains(normalize-space(.), 'Loading'))]";
     String PG_USERNAME_INPUT = "//*[@name='pf.username']";
     String PG_PASSWORD_INPUT = "//*[@type='password']";
     String PG_SIGN_ON_BUTTON = "//*[@class='ping-button normal allow']";
+    private static final int APP_LOAD_RECOVERY_ATTEMPTS = Integer.getInteger("app.load.recovery.attempts", 2);
+    private static final int APP_LOAD_RECOVERY_WAIT_SECONDS = Integer.getInteger("app.load.recovery.wait.seconds", 45);
 
     public static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().contains("win");
@@ -109,6 +112,7 @@ public class IpeSteps {
     private enum LoginReadiness {
         SIGNED_IN,
         LOGIN_FORM,
+        APP_LOADING,
         UNKNOWN
     }
 
@@ -233,12 +237,20 @@ public class IpeSteps {
             saveScreenshot();
             return true;
         }
+        if (readiness == LoginReadiness.APP_LOADING || readiness == LoginReadiness.UNKNOWN) {
+            readiness = recoverAppLoadIfNeeded(readiness, phase);
+            if (readiness == LoginReadiness.SIGNED_IN) {
+                AllureUtils.logActionF("Existing signed-in local session detected after app-load recovery. Skipping %s.", phase);
+                saveScreenshot();
+                return true;
+            }
+        }
 
         // Local runs require a human to complete SSO in the attached Chrome window.
         // Wait INDEFINITELY — no timeout — until the app shell is signed in, then
         // continue automatically. This lets the consultant take as long as SSO/MFA needs.
-        AllureUtils.logActionF("Local run: please complete login in the Selenium Chrome window. "
-                + "Waiting until the app is signed in (no timeout)...");
+        AllureUtils.logActionF("Local run: waiting for the Selenium Chrome window to reach the signed-in app shell. "
+                + "Complete login only if a login page is visible.");
         waitForSignedInIndefinitely(phase);
         AllureUtils.logActionF("Manual login detected. Continuing %s.", phase);
         saveScreenshot();
@@ -253,6 +265,8 @@ public class IpeSteps {
     private void waitForSignedInIndefinitely(String phase) {
         long start = System.currentTimeMillis();
         long iterations = 0;
+        long loadingStartedAt = 0;
+        int recoveryAttempts = 0;
         while (true) {
             try {
                 if (isSignedInAppVisible()) {
@@ -260,12 +274,30 @@ public class IpeSteps {
                             phase, (System.currentTimeMillis() - start) / 1000);
                     return;
                 }
+                if (isAppLoadingVisible()) {
+                    if (loadingStartedAt == 0) {
+                        loadingStartedAt = System.currentTimeMillis();
+                        AllureUtils.logActionF("Twenty5 app loading mask is visible while waiting for %s.", phase);
+                    }
+
+                    long loadingSeconds = (System.currentTimeMillis() - loadingStartedAt) / 1000;
+                    if (loadingSeconds >= APP_LOAD_RECOVERY_WAIT_SECONDS) {
+                        if (recoveryAttempts >= APP_LOAD_RECOVERY_ATTEMPTS) {
+                            failStuckAppLoad(phase);
+                        }
+                        recoveryAttempts++;
+                        recoverAppLoad(recoveryAttempts, phase);
+                        loadingStartedAt = 0;
+                    }
+                } else {
+                    loadingStartedAt = 0;
+                }
             } catch (RuntimeException e) {
-                AllureUtils.logActionF("Waiting for manual login %s: %s", phase, e.getMessage());
+                AllureUtils.logActionF("Waiting for signed-in app shell %s: %s", phase, e.getMessage());
             }
             // ~every 30s (60 iterations * 500ms) emit a heartbeat so the log shows progress.
             if (iterations++ % 60 == 0) {
-                AllureUtils.logActionF("Still waiting for manual login %s... (%ds elapsed)",
+                AllureUtils.logActionF("Still waiting for signed-in app shell %s... (%ds elapsed)",
                         phase, (System.currentTimeMillis() - start) / 1000);
             }
             Selenide.sleep(500);
@@ -316,6 +348,7 @@ public class IpeSteps {
 
     private LoginReadiness waitForLoginReadiness(Duration timeout, String phase) {
         long deadline = System.currentTimeMillis() + timeout.toMillis();
+        LoginReadiness lastReadiness = LoginReadiness.UNKNOWN;
         while (System.currentTimeMillis() <= deadline) {
             try {
                 if (isSignedInAppVisible()) {
@@ -327,6 +360,13 @@ public class IpeSteps {
                     AllureUtils.logActionF("Login page detected %s. Current URL: %s", phase, WebDriverRunner.url());
                     return LoginReadiness.LOGIN_FORM;
                 }
+
+                if (isAppLoadingVisible()) {
+                    if (lastReadiness != LoginReadiness.APP_LOADING) {
+                        AllureUtils.logActionF("Twenty5 app loading mask detected %s. Current URL: %s", phase, WebDriverRunner.url());
+                    }
+                    lastReadiness = LoginReadiness.APP_LOADING;
+                }
             } catch (RuntimeException e) {
                 AllureUtils.logActionF("Login readiness check still waiting %s: %s", phase, e.getMessage());
             }
@@ -334,13 +374,59 @@ public class IpeSteps {
             Selenide.sleep(500);
         }
 
-        return LoginReadiness.UNKNOWN;
+        return lastReadiness;
     }
 
     private boolean isSignedInAppVisible() {
         return firstVisibleElement(APP_TITLE_TOOLBAR) != null
                 || firstVisibleElement(APP_TOP_MENU_BUTTON) != null
                 || firstVisibleElement(PROPOSALS_TAB) != null;
+    }
+
+    private LoginReadiness recoverAppLoadIfNeeded(LoginReadiness readiness, String phase) {
+        if (readiness != LoginReadiness.APP_LOADING && readiness != LoginReadiness.UNKNOWN) {
+            return readiness;
+        }
+
+        LoginReadiness currentReadiness = readiness;
+        for (int attempt = 1; attempt <= APP_LOAD_RECOVERY_ATTEMPTS; attempt++) {
+            recoverAppLoad(attempt, phase);
+            currentReadiness = waitForLoginReadiness(Duration.ofSeconds(APP_LOAD_RECOVERY_WAIT_SECONDS),
+                    "after app-load recovery " + attempt + " for " + phase);
+            if (currentReadiness == LoginReadiness.SIGNED_IN || currentReadiness == LoginReadiness.LOGIN_FORM) {
+                return currentReadiness;
+            }
+        }
+
+        if (currentReadiness == LoginReadiness.APP_LOADING || isAppLoadingVisible()) {
+            failStuckAppLoad(phase);
+        }
+        return currentReadiness;
+    }
+
+    private void recoverAppLoad(int attempt, String phase) {
+        String currentUrl = WebDriverRunner.url();
+        AllureUtils.logActionF("Recovering Twenty5 app load for %s, attempt %d/%d. Current URL: %s",
+                phase, attempt, APP_LOAD_RECOVERY_ATTEMPTS, currentUrl);
+        saveScreenshot();
+
+        if (attempt == 1 && currentUrl != null && !currentUrl.trim().isEmpty() && !"about:blank".equalsIgnoreCase(currentUrl)) {
+            Selenide.refresh();
+        } else {
+            open(WebUtil.getSiteUrl());
+        }
+        Selenide.sleep(1000);
+    }
+
+    private void failStuckAppLoad(String phase) {
+        saveScreenshot();
+        throw new AssertionError("Twenty5 app stayed on the loading screen while waiting for " + phase
+                + " after " + APP_LOAD_RECOVERY_ATTEMPTS + " recovery attempt(s). Current URL: "
+                + WebDriverRunner.url() + ". Refresh the dedicated Selenium Chrome profile or rerun with AUTO_START_CHROME=true.");
+    }
+
+    private boolean isAppLoadingVisible() {
+        return firstVisibleElement(APP_LOADING_MASK) != null;
     }
 
     private boolean clickIfVisible(String xpath, String label) {

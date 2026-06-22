@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
@@ -168,7 +170,7 @@ public class LaborTable extends BaseWebElement implements EditableTable, Readabl
 //                    AllureUtils.logActionF(span.scrollIntoView(true).getText());
 //                    return span.exists() && columnName.equals(span.scrollIntoView(true).getText());
 //                })
-//                .mapToInt(headers::indexOf)
+//                .mapToInt(header -> indexOf(headers, header))
 //                .findFirst()
 //                .orElseThrow(() -> new NoSuchElementException("Header with name '" + columnName + "' not found on the page. Please check screenshot."));
 //    }
@@ -234,7 +236,7 @@ public class LaborTable extends BaseWebElement implements EditableTable, Readabl
         }
 //        AllureUtils.logActionF("xpath of all rows : ", ALL_ROWS_XPATH);
 //        element.scrollIntoView(true);
-        return $$x(ALL_ROWS_XPATH).indexOf(element.scrollIntoView(true));
+        return indexOf($$x(ALL_ROWS_XPATH), element.scrollIntoView(true));
     }
 
 

@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
@@ -254,7 +256,7 @@ public class BillingItemsTable extends BaseWebElement implements EditableTable, 
         SelenideElement row = $x(rowXPath);
         int index = -2;
         if(row.exists()) {
-            index = rows.indexOf(row);
+            index = indexOf(rows, row);
         }
         if (index == -1) {
             throw new NoSuchElementException("Row not found for the given filter.");
@@ -273,7 +275,7 @@ public class BillingItemsTable extends BaseWebElement implements EditableTable, 
 //        SelenideElement row = $x(rowXPath);
 //        int index = -1;
 //        if(row.exists()) {
-//            index = rows.indexOf(row);
+//            index = indexOf(rows, row);
 //        }
 //        if (index == -1) {
 //            AllureUtils.logActionF("Row not found for the given filter.");

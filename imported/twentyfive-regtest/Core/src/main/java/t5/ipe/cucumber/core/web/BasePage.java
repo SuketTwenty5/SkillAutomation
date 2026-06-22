@@ -19,7 +19,6 @@ import static com.codeborne.selenide.Selenide.*;
 import com.codeborne.selenide.SelenideElement;
 
 import java.time.Duration;
-import java.util.List;
 
 /**
  * Base class of web-page which implements default logic.
@@ -43,7 +42,7 @@ public abstract class BasePage implements Page, ElementMap {
             boolean anyVisible = false;
 
             for (String xpath : xpaths) {
-                List<SelenideElement> elements = $$x(xpath);
+                ElementsCollection elements = $$x(xpath);
                 if (!elements.isEmpty() && elements.get(0).isDisplayed()) {
                     System.out.println("🔄 Element reappeared: " + xpath);
                     stableStart = System.currentTimeMillis(); // Reset timer

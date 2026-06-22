@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.ElementsCollection;
 import io.qameta.allure.Allure;
 import org.openqa.selenium.Keys;
@@ -34,7 +36,7 @@ public class PhasesTable extends BaseWebElement implements EditableTable, Readab
     @Override
     public int getRowIndex(Map<String, String> filter) {
         String rowXPath = appendXPathByFilter(ALL_ROWS_XPATH, filter);
-        return $$x(ALL_ROWS_XPATH).indexOf($x(rowXPath));
+        return indexOf($$x(ALL_ROWS_XPATH), $x(rowXPath));
     }
 
     @Override

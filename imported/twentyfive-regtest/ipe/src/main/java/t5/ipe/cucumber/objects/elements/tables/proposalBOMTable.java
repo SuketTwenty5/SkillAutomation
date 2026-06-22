@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.*;
 import io.qameta.allure.Allure;
 import org.openqa.selenium.Keys;
@@ -131,7 +133,7 @@ public class proposalBOMTable extends BaseWebElement implements EditableTable, R
         SelenideElement row = $x(rowXPath);
         int index = -2;
         if(row.exists()) {
-            index = rows.indexOf(row);
+            index = indexOf(rows, row);
         }
         if (index == -1) {
             throw new NoSuchElementException("Row not found for the given filter.");
@@ -150,7 +152,7 @@ public class proposalBOMTable extends BaseWebElement implements EditableTable, R
 //        SelenideElement row = $x(rowXPath);
 //        int index = -1;
 //        if(row.exists()) {
-//            index = rows.indexOf(row);
+//            index = indexOf(rows, row);
 //        }
 //        if (index == -1) {
 //            AllureUtils.logActionF("Row not found for the given filter.");

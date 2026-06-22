@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.*;
 import io.qameta.allure.Allure;
 import org.openqa.selenium.Keys;
@@ -168,7 +170,7 @@ public class LineItemsTable extends BaseWebElement implements EditableTable, Rea
         boolean rowExists = row.exists();
         AllureUtils.logActionF("Row exists: " + rowExists);
         if(rowExists) {
-            int temp = rows.indexOf(row);
+            int temp = indexOf(rows, row);
             AllureUtils.logActionF("Temp index: " + temp);
             index = temp;
             AllureUtils.logActionF("Row index found: " + index);
@@ -191,7 +193,7 @@ public class LineItemsTable extends BaseWebElement implements EditableTable, Rea
 //        SelenideElement row = $x(rowXPath);
 //        int index = -1;
 //        if(row.exists()) {
-//            index = rows.indexOf(row);
+//            index = indexOf(rows, row);
 //        }
 //        if (index == -1) {
 //            AllureUtils.logActionF("Row not found for the given filter.");

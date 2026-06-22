@@ -1,5 +1,7 @@
 package t5.ipe.cucumber.objects.elements.tables;
 
+import static t5.ipe.cucumber.objects.elements.SelenideCollectionUtils.indexOf;
+
 import com.codeborne.selenide.*;
 import com.codeborne.selenide.ex.ElementNotFound;
 import io.qameta.allure.Allure;
@@ -344,7 +346,7 @@ public class CommonDualTable extends BaseWebElement implements EditableTable, Re
             if (normalFilter.isEmpty()) {
                 int rowIndex = -1;
                 try {
-                    rowIndex = $$x(LEFT_ROWS_XPATH).indexOf(elementLeft.scrollIntoView(true));
+                    rowIndex = indexOf($$x(LEFT_ROWS_XPATH), elementLeft.scrollIntoView(true));
                 } catch (com.codeborne.selenide.ex.ElementNotFound | org.openqa.selenium.NoSuchElementException e) {
                     System.err.println("❌ Element not found while trying to find index in LEFT_ROWS_XPATH: " + e.getMessage());
                     e.printStackTrace();
@@ -356,7 +358,7 @@ public class CommonDualTable extends BaseWebElement implements EditableTable, Re
             } else if (lockedFilter.isEmpty()) {
                 int rowIndex = -1;
                 try {
-                    rowIndex = $$x(RIGHT_ROWS_XPATH).indexOf(elementRight.scrollIntoView(true));
+                    rowIndex = indexOf($$x(RIGHT_ROWS_XPATH), elementRight.scrollIntoView(true));
                 } catch (com.codeborne.selenide.ex.ElementNotFound | org.openqa.selenium.NoSuchElementException e) {
                     System.err.println("❌ Element not found while trying to find index in LEFT_ROWS_XPATH: " + e.getMessage());
                     e.printStackTrace();
@@ -372,16 +374,16 @@ public class CommonDualTable extends BaseWebElement implements EditableTable, Re
                     AllureUtils.logActionF("xpath Element Right", rightRowXPath);
                     return -1;
                 }
-                int leftIndex = $$x(LEFT_ROWS_XPATH).indexOf(elementLeft.scrollIntoView(true));
-                int rightIndex = $$x(RIGHT_ROWS_XPATH).indexOf(elementRight.scrollIntoView(true));
+                int leftIndex = indexOf($$x(LEFT_ROWS_XPATH), elementLeft.scrollIntoView(true));
+                int rightIndex = indexOf($$x(RIGHT_ROWS_XPATH), elementRight.scrollIntoView(true));
                 if(leftIndex!=rightIndex && $$x(leftRowXPath).size() == 1 && $$x(rightRowXPath).size() ==1){
                     throw new RuntimeException("❌ Row element not found in either table");
                 } else if (leftIndex == rightIndex){
-                    return $$x(RIGHT_ROWS_XPATH).indexOf(elementRight.scrollIntoView(true));
+                    return indexOf($$x(RIGHT_ROWS_XPATH), elementRight.scrollIntoView(true));
                 }else if($$x(leftRowXPath).size() > 1 || $$x(rightRowXPath).size() == 1){
-                    return $$x(RIGHT_ROWS_XPATH).indexOf(elementRight.scrollIntoView(true));
+                    return indexOf($$x(RIGHT_ROWS_XPATH), elementRight.scrollIntoView(true));
                 }else if($$x(leftRowXPath).size() == 1 || $$x(rightRowXPath).size() > 1){
-                    return $$x(LEFT_ROWS_XPATH).indexOf(elementLeft.scrollIntoView(true));
+                    return indexOf($$x(LEFT_ROWS_XPATH), elementLeft.scrollIntoView(true));
                 } else {
                     throw new RuntimeException("❌ Row element not found in either table");
                 }
@@ -399,7 +401,7 @@ public class CommonDualTable extends BaseWebElement implements EditableTable, Re
 //        }
 ////        AllureUtils.logActionF("xpath of all rows : ", ALL_ROWS_XPATH);
 ////        element.scrollIntoView(true);
-//        return $$x(ALL_ROWS_XPATH).indexOf(element.scrollIntoView(true));
+//        return indexOf($$x(ALL_ROWS_XPATH), element.scrollIntoView(true));
 //    }
 
 
