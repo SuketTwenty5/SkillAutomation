@@ -126,12 +126,22 @@ ts=$(date +%Y%m%d_%H%M%S); mkdir -p "playwrightRecording/$ts"; npx playwright co
 5. Read `playwrightRecording/<timestamp>/recording.spec.js`, then create consultant-friendly artifacts in the same folder:
 
 - `recording.steps.json`: normalized steps and values inferred from the recording.
-- `recording-YYYY-MM-DD-HH-MM-SS-zone.md`: readable step guide with source data, runtime notes, and expected assertions. Derive the human-readable date/time from the recording folder timestamp when possible. For example, `playwrightRecording/20260627_175641` should produce `recording-2026-06-27-17-56-41-ist.md` when the local timezone is IST.
+- `<test-case-name-slug>-YYYY-MM-DD-HH-MM-SS-zone.md`: readable test case README with source data, runtime notes, and expected assertions. Always derive the slug from the test case name/title, use lowercase words separated by hyphens, and derive the human-readable date/time from the recording folder timestamp when possible. For example, a test case named `Create Engineering/Services Proposal From Prior Project` in `playwrightRecording/20260629_084528` should produce `create-engineering-services-proposal-from-prior-project-2026-06-29-08-45-28-ist.md` when the local timezone is IST. Do not leave the converted README as a generic `README.md` or `recording-*.md`.
 - A local Playwright automation spec under `tests/playwright/` or the recording folder, depending on the user's preference and repo pattern.
 
-6. Map generated code to existing workspace helpers where possible. Do not leave raw codegen selectors as final automation when stable role/name, label, or local helper selectors exist.
-7. Run the generated local automation with the narrow headed Playwright command, using escalation for headed browser launch. Save results under the usual `test-results/` and report folders.
-8. In the final report, include the recording folder path, generated Markdown path, generated spec path, command run, pass/fail status, created object URL/ID when available, and any selector or data variances.
+6. Map generated code to existing workspace helpers where possible. Do not leave raw codegen selectors as final automation when stable role/name, label, or local helper selectors exist. When converting recordings to maintained Playwright tests:
+
+- Replace generated ExtJS IDs with role, label, text, placeholder, or scoped field locators.
+- Use existing workspace helpers before adding new selectors.
+- For picker triggers, scope from the visible field label to the trigger in the same field container.
+- For prior-project copy searches, enter the search text in the visible `//*[contains(@data-componentid,'iBESearchComboBox') and @aria-hidden="false"]` search component; do not type into a nearby label-scoped field.
+- Run locator scanning when stable locators are unclear.
+- Wrap unavoidable ExtJS fallbacks in named helpers with comments.
+- Add assertions after major actions: field entry, copy, tab load, popup open, and save.
+
+7. Run the generated local automation with the narrow headed Playwright command, using escalation for headed browser launch. Keep codegen unchanged, and collect evidence from the converted Playwright run using screenshots and Playwright trace output. Save results under the usual `test-results/` and report folders.
+8. Immediately update the test case README after each converted automation run. Add or refresh a `Latest Execution Evidence` section with run status, command, screenshot path(s), trace path, error context path when present, and the main blocking step or created object URL/ID when available. Prefer relative Markdown links so screenshots are easy to open from the workspace.
+9. In the final report, include the recording folder path, generated Markdown path, generated spec path, command run, pass/fail status, created object URL/ID when available, and any selector or data variances.
 
 ## PDF Or Manual Test Workflow
 
