@@ -1,0 +1,77 @@
+test_id: PDF-CreatingANewRegressionTestProposalInTwentyfive
+title: Creating A New Regression Test Proposal In Twentyfive
+source: /Users/suketsuman/Downloads/CreatingANewRegressionTestProposalInTwentyfive-d668d150-d8f7-4016-be.pdf
+environment: https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote
+preconditions:
+  - User is authenticated in the Twenty5 AppRouter quote application.
+  - Chrome debug endpoint is available on 127.0.0.1:9222 for Playwright attachment.
+test_data:
+  proposal_title: Regression test PRK automation
+  runtime_proposal_title: Regression test PRK automation ${ISO_MINUTE}
+  best_fit_type: Regression Test Only - Consulting
+  estimated_project_start: June 5, 2026
+  project_end: April 26, 2028
+  leading_company: Regression Test
+  leading_department: US - New York
+  profit_center: Services
+  cost_center: REG CC-2
+  client_customer: 409TH CONTRACTING SUPPORT BRIGADE
+steps:
+  - id: 1
+    action: authenticate
+    target: SAP login
+    value: Praveen.kumbar@twenty5.com
+    expected: Twenty5 quote app is available.
+  - id: 2
+    action: click
+    target: PROPOSALS
+    expected: Proposal Management is displayed.
+  - id: 3
+    action: click
+    target: New
+    expected: Project Setup page is displayed.
+  - id: 4
+    action: type
+    target: Title or Brief Description
+    value: Regression test PRK automation
+    expected: Title is populated.
+  - id: 5
+    action: select
+    target: Best-fit Type
+    value: Regression Test Only - Consulting
+    expected: Best-fit Type is selected.
+  - id: 6
+    action: set_date
+    target: Estimated Project Start
+    value: June 5, 2026
+    expected: Start date is accepted.
+  - id: 7
+    action: set_date
+    target: Project End
+    value: April 26, 2028
+    expected: End date is accepted.
+  - id: 8
+    action: select
+    target: Leading company
+    value: Regression Test
+    expected: Leading company is selected.
+  - id: 9
+    action: select
+    target: Leading department
+    value: US - New York
+    expected: Leading department is selected.
+  - id: 10
+    action: select
+    target: Profit Center
+    value: Services
+    expected: Profit center is selected.
+  - id: 11
+    action: select
+    target: Cost Center
+    value: REG CC-2
+    expected: Cost center is selected.
+  - id: 12
+    action: select
+    target: Client/Customer
+    value: 409TH CONTRACTING SUPPORT BRIGADE
+    expected: Client/customer is selected.

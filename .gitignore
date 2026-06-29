@@ -4,6 +4,8 @@ target/
 build/
 node_modules/
 test-evidence/
+test-results/
+playwright-report/
 test-screenshots/
 imported/twentyfive-regtest/tests/previousScreenshot/
 test-report.json

@@ -8,7 +8,7 @@ Give them a private runner workspace, not only a `SKILL.md`:
 
 ```text
 twentyfive-ai-test-runner/
-  skills/selenium-automation/
+  skills/skill-playwright-automation/
   imported/twentyfive-regtest/
 ```
 
@@ -23,7 +23,7 @@ This can be a private GitHub repo, Bitbucket repo, or zip. Do not publish propri
 
 ```bash
 mkdir -p ~/.codex/skills
-cp -R skills/selenium-automation ~/.codex/skills/
+cp -R skills/skill-playwright-automation ~/.codex/skills/
 ```
 
 5. Restart the agent.
@@ -39,7 +39,7 @@ cp -R skills/selenium-automation ~/.codex/skills/
 8. Paste the test request:
 
 ```text
-Use $selenium-automation.
+Use $skill-playwright-automation.
 Run this Confluence/manual test in my local Chrome.
 Use the bundled Twenty5 automation code first.
 

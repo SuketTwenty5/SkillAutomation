@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-https://github.com/SuketTwenty5/SkillAutomation.git}"
 WORKSPACE_DIR_FROM_ENV="${WORKSPACE_DIR+x}"
 WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/SkillAutomation}"
-SKILL_NAME="${SKILL_NAME:-selenium-automation}"
+SKILL_NAME="${SKILL_NAME:-skill-playwright-automation}"
 CHROME_PROFILE="${CHROME_PROFILE:-$HOME/.selenium-ai-chrome}"
 CHROME_DEBUG_PORT="${CHROME_DEBUG_PORT:-9222}"
 CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
@@ -746,7 +746,7 @@ In the Chrome window that opened:
 
 In the selected AI agent, paste:
 
-Use \$selenium-automation.
+Use \$skill-playwright-automation.
 Run this Confluence/manual test in my local Chrome.
 Use bundled Twenty5 automation code first.
 Generate only missing glue code.

@@ -1,0 +1,25 @@
+{
+  "source": "/Users/suketsuman/Downloads/CreatingANewRegressionTestProposalInTwentyfive-d668d150-d8f7-4016-be.pdf",
+  "spec": "tests/playwright/regression-proposal-pdf.spec.ts",
+  "steps": [
+    { "id": 1, "classification": "blocked", "reason": "Authentication is handled by the existing signed-in debug Chrome session; credentials are not automated or logged." },
+    { "id": 2, "classification": "mapped", "implementation": "ProposalSetupPage.navigateToProposals" },
+    { "id": 3, "classification": "mapped", "implementation": "ProposalSetupPage.startNewProposal" },
+    { "id": 4, "classification": "generated-glue", "implementation": "ProposalSetupPage.fillConsultingRegressionFields title" },
+    { "id": 5, "classification": "mapped", "implementation": "ProposalSetupPage.selectProposalType" },
+    { "id": 6, "classification": "generated-glue", "implementation": "ProposalSetupPage.fillConsultingRegressionFields plannedStart" },
+    { "id": 7, "classification": "generated-glue", "implementation": "ProposalSetupPage.fillConsultingRegressionFields end" },
+    { "id": 8, "classification": "mapped", "implementation": "ProposalSetupPage.yourCompanyField + selectDropdown" },
+    { "id": 9, "classification": "mapped", "implementation": "ProposalSetupPage.leadingDepartmentField + selectDropdown" },
+    { "id": 10, "classification": "generated-glue", "implementation": "ProposalSetupPage.profitCenterField + selectDropdown" },
+    { "id": 11, "classification": "generated-glue", "implementation": "ProposalSetupPage.costCenterField + selectDropdown" },
+    { "id": 12, "classification": "mapped", "implementation": "ProposalSetupPage.clientCustomerField + selectDropdown" }
+  ],
+  "runtime_variance": [
+    {
+      "source_value": "Regression test PRK automation",
+      "runtime_value": "Regression test PRK automation ${ISO_MINUTE}",
+      "reason": "A unique title is used so repeated test runs can create a new proposal without colliding with existing data."
+    }
+  ]
+}

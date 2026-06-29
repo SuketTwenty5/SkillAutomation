@@ -1,0 +1,157 @@
+test_id: PDF-HowToCreateANewProjectProposalInTwentyfive
+title: How To Create A New Project Proposal In Twentyfive
+source: /Users/suketsuman/Downloads/HowToCreateANewProjectProposalInTwentyfive-a71946f5-534b-4bdf-bf92-c.pdf
+environment: https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/?force=19e98ab1f60#quote
+preconditions:
+  - User is authenticated in the TwentyFive AppRouter quote application.
+  - Chrome debug endpoint is available on 127.0.0.1:9222 for automation attachment.
+test_data:
+  proposal_title: PRK regression test 2
+  best_fit_type: Regression Test Only - Manufacturing
+  proposal_type: Engineering/Services Proposal
+  estimated_project_start: June 30, 2026
+  project_end: September 27, 2028
+  company: Regression Test
+  leading_site: US - New York
+  profit_center: Products
+  client_customer: 82nd Airborne Division
+  project_plan_template: (AS) Regression - Copy from template
+  phase: Test Phase 1
+  labor_resources:
+    - REG_CONSULTANT2
+    - REG_CONSULTANT3
+    - REG_CONSULTANT1
+  estimate_views:
+    - PRK
+    - Pro Serv - Planning View (shared & preferred)
+steps:
+  - id: 1
+    action: navigate
+    target: AppRouter quote URL
+    value: https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/?force=19e98ab1f60#quote
+    expected: Proposal list page is displayed.
+  - id: 2
+    action: click
+    target: New
+    value:
+    expected: New proposal setup page is displayed.
+  - id: 3
+    action: type
+    target: Title or Brief Description
+    value: PRK regression test 2
+    expected: Proposal title is populated.
+  - id: 4
+    action: select
+    target: Best-fit Type
+    value: Regression Test Only - Manufacturing
+    expected: Best-fit Type is selected.
+  - id: 5
+    action: select
+    target: Proposal Type
+    value: Engineering/Services Proposal
+    expected: Proposal Type is selected.
+  - id: 6
+    action: open
+    target: SAP Project dropdown
+    value:
+    expected: SAP Project options are displayed.
+  - id: 7
+    action: set_date
+    target: Estimated Project Start
+    value: June 30, 2026
+    expected: Start date is accepted.
+  - id: 8
+    action: set_date
+    target: Project End
+    value: September 27, 2028
+    expected: End date is accepted.
+  - id: 9
+    action: select
+    target: Your Company
+    value: Regression Test
+    expected: Company is selected.
+  - id: 10
+    action: select
+    target: Leading Site or Department
+    value: US - New York
+    expected: Leading site is selected.
+  - id: 11
+    action: select
+    target: Profit Center
+    value: Products
+    expected: Profit center is selected.
+  - id: 12
+    action: select
+    target: Client/Customer
+    value: 82nd Airborne Division
+    expected: Client/customer is selected.
+  - id: 13
+    action: select
+    target: Project plan dropdown
+    value: (AS) Regression - Copy from template
+    expected: Template is selected.
+  - id: 14
+    action: click
+    target: Copy
+    value:
+    expected: Project is initialized from template.
+  - id: 15
+    action: click
+    target: Cost Structure
+    value:
+    expected: Cost Structure tab is displayed.
+  - id: 16
+    action: expand
+    target: Phase details
+    value:
+    expected: Work packages are visible.
+  - id: 17
+    action: click
+    target: Open next to Test Phase 1
+    value:
+    expected: Estimate opens.
+  - id: 18
+    action: click
+    target: Labor
+    value:
+    expected: Labor tab is displayed.
+  - id: 19
+    action: select_table_cell
+    target: Sub Practice cell for first labor row
+    value: REG_CONSULTANT2
+    expected: First labor row uses REG_CONSULTANT2.
+  - id: 20
+    action: select_table_cell
+    target: Sub Practice cell for second labor row
+    value: REG_CONSULTANT3
+    expected: Second labor row uses REG_CONSULTANT3.
+  - id: 21
+    action: select_table_cell
+    target: Sub Practice cell for third labor row
+    value: REG_CONSULTANT1
+    expected: Third labor row uses REG_CONSULTANT1.
+  - id: 22
+    action: switch_view
+    target: Estimate view
+    value: PRK
+    expected: PRK view is displayed.
+  - id: 23
+    action: switch_view
+    target: Estimate view
+    value: Pro Serv - Planning View (shared & preferred)
+    expected: Planning view is displayed.
+  - id: 24
+    action: refresh
+    target: Estimate totals
+    value:
+    expected: Estimate totals refresh successfully.
+  - id: 25
+    action: click
+    target: Update project costs and prices
+    value:
+    expected: Project costs and prices update successfully.
+  - id: 26
+    action: click
+    target: Deliverables
+    value:
+    expected: Deliverables tab is displayed.

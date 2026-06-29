@@ -1,0 +1,26 @@
+[
+  {
+    "id": "scribe-creating-a-new-project-proposal",
+    "sourceType": "scribe",
+    "source": "https://scribehow.com/o/xogHL4gvSieB6fk9ThvLcw/viewer/Creating_A_New_Project_Proposal__66G4u6P8TTe0QOpWDd5HmQ",
+    "title": "Creating A New Project Proposal",
+    "artifacts": [
+      "tests/playwright/scribe-project-proposal.steps.json",
+      "tests/playwright/scribe-project-proposal.spec.ts"
+    ],
+    "notes": "Use the steps JSON as the source of truth before fetching the Scribe page again."
+  },
+  {
+    "id": "pdf-how-to-create-new-project-proposal",
+    "sourceType": "pdf",
+    "source": "/Users/suketsuman/Downloads/HowToCreateANewProjectProposalInTwentyfive-a71946f5-534b-4bdf-bf92-c.pdf",
+    "title": "How To Create A New Project Proposal In Twentyfive",
+    "artifacts": [
+      "reports/how-to-create-new-project-proposal.normalized.yaml",
+      "reports/how-to-create-new-project-proposal.steps.json",
+      "reports/how-to-create-new-project-proposal.mapping.json",
+      "tests/playwright/regression-proposal-pdf.spec.ts"
+    ],
+    "notes": "Use the normalized YAML for full PDF data and the mapping/spec files for execution."
+  }
+]

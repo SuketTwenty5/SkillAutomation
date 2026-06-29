@@ -1,0 +1,51 @@
+{
+  "source": "https://scribehow.com/o/xogHL4gvSieB6fk9ThvLcw/viewer/Creating_A_New_Project_Proposal__66G4u6P8TTe0QOpWDd5HmQ",
+  "title": "Creating A New Project Proposal",
+  "capturedAt": "2026-06-27",
+  "steps": [
+    {
+      "number": 1,
+      "instruction": "Navigate to https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote"
+    },
+    {
+      "number": 2,
+      "instruction": "Click \"New\""
+    },
+    {
+      "number": 3,
+      "instruction": "Set Proposal type as Regression Test Only - Manufacturing"
+    },
+    {
+      "number": 4,
+      "instruction": "Set Proposal title with timestamp"
+    },
+    {
+      "number": 5,
+      "instruction": "Enter start date 6/27/2031"
+    },
+    {
+      "number": 6,
+      "instruction": "Enter Company as Brazil"
+    },
+    {
+      "number": 7,
+      "instruction": "set NL - Netherlands in Leading Site or Department"
+    },
+    {
+      "number": 8,
+      "instruction": "Set 19th Aug Customer (CUST091) in \"Client/Customer (Sell-to) *Edit Role/Alt. Cust.\" field."
+    },
+    {
+      "number": 9,
+      "instruction": "Click on Save button"
+    }
+  ],
+  "testData": {
+    "proposalType": "Regression Test Only - Manufacturing",
+    "proposalTitle": "Project proposal automation with timestamp",
+    "estimatedProjectStart": "6/27/2031",
+    "leadingCompany": "Brazil",
+    "leadingDepartment": "NL - Netherlands",
+    "clientCustomer": "19th Aug Customer (CUST091)"
+  }
+}

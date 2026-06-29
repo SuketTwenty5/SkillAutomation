@@ -1,0 +1,14 @@
+{
+  "source": "playwrightRecording/20260627_191218/recording.spec.ts",
+  "recordedAt": "2026-06-27T19:12:18+05:30",
+  "loginUser": "suket.suman@twenty5.com",
+  "proposalType": "Engineering/Services Proposal",
+  "objectTypePicker": "#iBEBusObjType-6041-trigger-picker",
+  "steps": [
+    { "action": "login", "via": "SAP IAS OAuth", "user": "suket.suman@twenty5.com" },
+    { "action": "click", "target": "button:New" },
+    { "action": "openDropdown", "target": "#iBEBusObjType-6041-trigger-picker" },
+    { "action": "selectOption", "target": "Engineering/Services Proposal" }
+  ],
+  "expected": "New proposal opens in Setup with type 'Engineering/Services Proposal'."
+}

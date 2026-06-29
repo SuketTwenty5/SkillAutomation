@@ -4,7 +4,7 @@ This repo packages a consultant-ready AI + Selenium automation workspace for con
 
 Consultants do not need to already own the Selenium project. They need a runner workspace from you that contains:
 
-- the `selenium-automation` skill
+- the `skill-playwright-automation` skill
 - the required Selenium/Selenide automation code or private dependency
 - Maven/Gradle runner configuration
 - any allowed action catalog/examples
@@ -16,13 +16,13 @@ In this repo, `imported/twentyfive-regtest` is the bundled Twenty5 automation re
 Use the skills installer command from the consultant machine:
 
 ```bash
-npx skills add https://github.com/mindrally/skills --skill selenium-automation
+npx skills add https://github.com/mindrally/skills --skill skill-playwright-automation
 ```
 
 If the installer expects a folder path instead of skill discovery, point it to:
 
 ```text
-skills/selenium-automation
+skills/skill-playwright-automation
 ```
 
 Skill-only install is useful only when the consultant already has an automation project or runner workspace. For consultants without your Selenium project, give them this whole runner workspace or a private packaged equivalent.
@@ -34,7 +34,7 @@ Give consultants one private repo or zip:
 ```text
 twentyfive-ai-test-runner/
   README.md
-  skills/selenium-automation/
+  skills/skill-playwright-automation/
   imported/twentyfive-regtest/
 ```
 
@@ -199,7 +199,7 @@ The runner attaches to the consultant's logged-in Chrome debug session, reuses t
 6. Ask the agent:
 
 ```text
-Use the selenium-automation skill.
+Use the skill-playwright-automation skill.
 Run this Confluence/manual test case in my local Chrome:
 <paste test case>
 ```

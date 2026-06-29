@@ -1,0 +1,159 @@
+--- Page 1 ---
+Made with Scribe - https://scribehow.com
+1
+How To Create A New Project Proposal In
+Twentyfive
+Learn the step-by-step process for generating a new project proposal and configuring
+cost structures within the AppRouter application. This guide walks you through
+selecting project details, assigning consultants to specific phases, and updating your
+project estimates.
+Proposal Initiation
+1
+Navigate to https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.co
+m/?force=19e98ab1f60#quote
+
+--- Page 2 ---
+Made with Scribe - https://scribehow.com
+2
+2
+Click "New"
+Project Details
+3
+Type "PRK regression test 2" in the Title or Brief Description field.
+
+--- Page 3 ---
+Made with Scribe - https://scribehow.com
+3
+4
+Open the Best-fit Type dropdown.
+5
+Select "Regression Test Only - Manufacturing".
+
+--- Page 4 ---
+Made with Scribe - https://scribehow.com
+4
+6
+Open the Proposal Type dropdown.
+7
+Open the SAP Project dropdown.
+
+--- Page 5 ---
+Made with Scribe - https://scribehow.com
+5
+8
+Select "Engineering/Services Proposal".
+9
+Set June 30, 2026, as the Estimated Project Start date.
+
+--- Page 6 ---
+Made with Scribe - https://scribehow.com
+6
+10
+Set September 27, 2028, as the Project End date.
+
+--- Page 7 ---
+Made with Scribe - https://scribehow.com
+7
+Organization and Client Setup
+11
+Select "Regression Test" as Your Company.
+
+--- Page 8 ---
+Made with Scribe - https://scribehow.com
+8
+12
+Select "US - New York" as the Leading Site or Department.
+
+--- Page 9 ---
+Made with Scribe - https://scribehow.com
+9
+13
+Select "Products" as the Profit Center.
+
+--- Page 10 ---
+Made with Scribe - https://scribehow.com
+10
+14
+Select "82nd Airborne Division" as the Client/Customer.
+
+--- Page 11 ---
+Made with Scribe - https://scribehow.com
+11
+Plan Initialization
+
+--- Page 12 ---
+Made with Scribe - https://scribehow.com
+12
+15
+Select "(AS) Regression - Copy from template" from the project plan dropdown.
+16
+Click "Copy" to initialize the project from the selected template.
+Cost and Estimate Management
+
+--- Page 13 ---
+Made with Scribe - https://scribehow.com
+13
+17
+Click "Cost Structure"
+18
+Expand the phase details to view work packages.
+
+--- Page 14 ---
+Made with Scribe - https://scribehow.com
+14
+19
+Click "Open" next to Test Phase 1 to edit estimates.
+20
+Click "Labor"
+
+--- Page 15 ---
+Made with Scribe - https://scribehow.com
+15
+21
+Select the Sub Practice cell for the first labor row.
+22
+Open the Sub Practice selection menu.
+
+--- Page 16 ---
+Made with Scribe - https://scribehow.com
+16
+23
+Select "REG_CONSULTANT2".
+24
+Select the Sub Practice cell for the second labor row.
+
+--- Page 17 ---
+Made with Scribe - https://scribehow.com
+17
+25
+Select "REG_CONSULTANT3".
+26
+Select the Sub Practice cell for the third labor row.
+
+--- Page 18 ---
+Made with Scribe - https://scribehow.com
+18
+27
+Select "REG_CONSULTANT1".
+28
+Switch to the "PRK" view.
+
+--- Page 19 ---
+Made with Scribe - https://scribehow.com
+19
+29
+Switch to the "Pro Serv - Planning View (shared & preferred)".
+
+--- Page 20 ---
+Made with Scribe - https://scribehow.com
+20
+30
+Refresh the estimate totals.
+
+--- Page 21 ---
+Made with Scribe - https://scribehow.com
+21
+31
+Update project costs and prices.
+32
+Click "Deliverables"

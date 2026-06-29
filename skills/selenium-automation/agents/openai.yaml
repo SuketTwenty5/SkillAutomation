@@ -1,7 +1,0 @@
-interface:
-  display_name: "Selenium Automation"
-  short_description: "Run manual tests with Selenium"
-  default_prompt: "Use $selenium-automation to convert this pasted manual or Confluence test case into a local Selenium/Selenide run in Chrome."
-
-policy:
-  allow_implicit_invocation: true

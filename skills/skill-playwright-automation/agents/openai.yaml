@@ -1,0 +1,7 @@
+interface:
+  display_name: "Twenty5 Playwright Automation"
+  short_description: "Run Twenty5 tests with Playwright"
+  default_prompt: "Use $skill-playwright-automation to map this PDF or manual Twenty5 test into a headed Playwright run with scanned locators."
+
+policy:
+  allow_implicit_invocation: true

@@ -8,6 +8,13 @@
     "test:master-data": "node test_automation_cdp.js",
     "test:legacy": "node test_automation.js",
     "test:headless": "HEADLESS=true node test_automation.js",
+    "test:pw": "scripts/run-playwright-test.sh",
+    "test:pw:prof-services-001": "scripts/run-playwright-test.sh tests/playwright/prof-services-001.spec.ts",
+    "test:pw:manufacturing": "scripts/run-playwright-manufacturing-suite.sh",
+    "record": "scripts/start-playwright-recording.sh",
+    "record:pw": "scripts/start-playwright-recording.sh",
+    "record:auth": "node scripts/prepare-playwright-recording-auth.mjs",
+    "source:find": "node skills/skill-playwright-automation/scripts/find-source-artifact.mjs",
     "test:report": "cat test-report.json"
   },
   "keywords": [
