@@ -227,7 +227,7 @@ export async function waitForSignedInApp(page: Page, timeoutMs: number): Promise
     }
   }
 
-  await waitForAnyVisible(page, appShellLocators(page), timeoutMs, 'signed-in Twenty5 app shell');
+  await waitForAppShellWithOneRefresh(page, timeoutMs, 'signed-in Twenty5 app shell');
 }
 
 async function alreadyInSignedInApp(page: Page): Promise<boolean> {
@@ -296,11 +296,46 @@ async function loginWithTestUser(page: Page, timeoutMs: number): Promise<void> {
   });
 
   const mfaChallenge = page.getByText(/enter code|verification code|multi-factor|authenticator|approve sign in/i).first();
-  await waitForAnyVisible(page, [...appShellLocators(page), mfaChallenge], timeoutMs, 'signed-in Twenty5 app shell after automatic login');
+  await waitForAppShellWithOneRefresh(page, timeoutMs, 'signed-in Twenty5 app shell after automatic login', [mfaChallenge]);
 
   if (!(await anyVisible(appShellLocators(page)))) {
     throw new Error('Automatic login did not reach the Twenty5 app shell. MFA/SSO approval may be required.');
   }
+}
+
+async function waitForAppShellWithOneRefresh(
+  page: Page,
+  timeoutMs: number,
+  description: string,
+  extraLocators: Locator[] = [],
+): Promise<void> {
+  const firstWaitMs = Math.min(timeoutMs, 45_000);
+  const startedAt = Date.now();
+
+  try {
+    await waitForAnyVisible(page, [...appShellLocators(page), ...extraLocators], firstWaitMs, description);
+    return;
+  } catch (error) {
+    if (!(await refreshOnceAfterAppNavigation(page, description))) {
+      throw error;
+    }
+  }
+
+  const elapsed = Date.now() - startedAt;
+  const remainingMs = Math.max(15_000, timeoutMs - elapsed);
+  await waitForAnyVisible(page, [...appShellLocators(page), ...extraLocators], remainingMs, description);
+}
+
+async function refreshOnceAfterAppNavigation(page: Page, description: string): Promise<boolean> {
+  if (!/hana\.ondemand\.com/i.test(page.url()) && !/^(about:blank|chrome-error:)/i.test(page.url())) return false;
+
+  console.warn(`[${description}] app shell did not appear after navigation; refreshing once before retrying.`);
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 }).catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('ERR_ABORTED')) throw error;
+  });
+  await waitForNoLoading(page, 30_000);
+  return true;
 }
 
 function readLoginCredentials(): LoginCredentials | undefined {

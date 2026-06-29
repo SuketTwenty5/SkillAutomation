@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from 'playwright/test';
 import { test } from 'playwright/test';
 import { connectToTwentyFive } from './support/twentyfive-cdp';
 import { ProposalSetupPage } from './support/proposal-setup-page';
-import { clickAttached, clickTab, fastClick, textLocator } from './support/twentyfive-ui';
+import { clickAttached, clickTab, fastClick, openEstimateFromActiveTab, textLocator } from './support/twentyfive-ui';
 
 const testData = {
   source: 'playwrightRecording/20260629_084528/create-engineering-services-proposal-from-prior-project-2026-06-29-08-45-28-ist.md',
@@ -153,23 +153,7 @@ async function chooseCostStructure(page: Page, searchText: string): Promise<void
 }
 
 async function openEstimate(page: Page): Promise<Page> {
-  const activePanel = page.locator("xpath=//*[@role='tabpanel' and @aria-hidden='false']").first();
-  const openLink = activePanel.locator("xpath=.//*[self::a or self::div or self::span][normalize-space()='Open']").first();
-  const createLink = activePanel.locator("xpath=.//*[self::a or self::div or self::span][normalize-space()='Create']").first();
-  const link = (await openLink.count()) > 0 ? openLink : createLink;
-
-  const popupPromise = page.waitForEvent('popup', { timeout: 45_000 }).catch(() => undefined);
-  await clickAttached(link, 'cost structure Open/Create link', 20_000);
-
-  const confirmAndOpen = page.getByRole('button', { name: /Confirm.*Open/i }).first();
-  if ((await confirmAndOpen.count()) > 0 && (await confirmAndOpen.isVisible().catch(() => false))) {
-    await fastClick(confirmAndOpen, 'Confirm & Open', 10_000);
-  }
-
-  const popup = await popupPromise;
-  const estimatePage = popup ?? page;
-  await waitForNotBusy(estimatePage);
-  return estimatePage;
+  return openEstimateFromActiveTab(page);
 }
 
 async function saveEstimate(page: Page): Promise<void> {

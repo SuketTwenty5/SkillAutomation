@@ -1,0 +1,111 @@
+{
+  "recordingFolder": "playwrightRecording/20260629_175331",
+  "testCaseName": "Create Capital Project From Prior Project And Update Labor FTE",
+  "recordedAt": "2026-06-29T17:53:31+05:30",
+  "sourceRecording": "playwrightRecording/20260629_175331/recording.spec.js",
+  "testData": {
+    "projectName": "regression test capital",
+    "runtimeProjectName": "regression test capital <timestamp>",
+    "probableProjectStart": "6/29/2029",
+    "projectEnd": "6/29/2037",
+    "leadingSite": "IT - Italy (Modena)",
+    "clientSearchText": "USD",
+    "clientCustomer": "Regression Test - Customer USD",
+    "priorProjectSearch": "(AS) Copy",
+    "priorProjectResult": "(AS) Copy from Template v2",
+    "laborPool": "Supplier Engineer",
+    "laborFte": "2"
+  },
+  "steps": [
+    {
+      "order": 1,
+      "status": "mapped",
+      "action": "Open the Proposals page and start a new project.",
+      "automation": "ProposalSetupPage.navigateToProposals and startNewProposal"
+    },
+    {
+      "order": 2,
+      "status": "mapped",
+      "action": "Enter Project Name.",
+      "field": "Project Name *",
+      "value": "regression test capital <timestamp>"
+    },
+    {
+      "order": 3,
+      "status": "mapped",
+      "action": "Enter Probable Project Start.",
+      "field": "Probable Project Start *",
+      "value": "6/29/2029"
+    },
+    {
+      "order": 4,
+      "status": "mapped",
+      "action": "Enter Project End.",
+      "field": "Project End *",
+      "value": "6/29/2037"
+    },
+    {
+      "order": 5,
+      "status": "mapped",
+      "action": "Select Leading Site.",
+      "field": "Leading Site *",
+      "value": "IT - Italy (Modena)"
+    },
+    {
+      "order": 6,
+      "status": "mapped",
+      "action": "Select Client/Customer (Sell-to).",
+      "field": "Client/Customer (Sell-to) *",
+      "searchText": "USD",
+      "value": "Regression Test - Customer USD"
+    },
+    {
+      "order": 7,
+      "status": "mapped",
+      "action": "Choose Select a Prior Project.",
+      "field": "Select a Prior Project",
+      "value": true
+    },
+    {
+      "order": 8,
+      "status": "mapped",
+      "action": "Search and select prior project.",
+      "field": "Prior Project",
+      "searchText": "(AS) Copy",
+      "value": "(AS) Copy from Template v2"
+    },
+    {
+      "order": 9,
+      "status": "mapped",
+      "action": "Copy prior project data.",
+      "button": "Copy"
+    },
+    {
+      "order": 10,
+      "status": "mapped",
+      "action": "Open the estimate from the Estimates tab.",
+      "tab": "Estimates",
+      "link": "Open"
+    },
+    {
+      "order": 11,
+      "status": "mapped",
+      "action": "Open the Labor tab in the estimate.",
+      "tab": "Labor"
+    },
+    {
+      "order": 12,
+      "status": "generated-glue",
+      "action": "Add or activate a blank labor row and select Labor Pool.",
+      "field": "Labor Pool",
+      "value": "Supplier Engineer"
+    },
+    {
+      "order": 13,
+      "status": "generated-glue",
+      "action": "Set the labor FTE value.",
+      "field": "FTE",
+      "value": "2"
+    }
+  ]
+}

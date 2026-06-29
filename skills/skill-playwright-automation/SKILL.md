@@ -86,15 +86,14 @@ npx playwright open --save-storage=auth.json https://approuter-twenty5ipe-dev.cf
 
 Use this workflow when the user asks to start recording, record steps, capture a consultant flow, use Playwright codegen, or create automation from a fresh recording instead of a PDF/Scribe/manual source.
 
-When the user's message is only `start recording` or equivalent, treat it as an instruction to launch this workflow immediately. Do not search for generic Codex app recording tools, and do not tell the consultant that no dedicated recording tool was found. Announce that the Playwright automation skill is being used, request the required headed-browser escalation, and start the recorder.
+When the user's message is only `start recording`, `start recording using codegen`, or equivalent, treat it as an instruction to launch this workflow immediately. Do not search for generic Codex app recording tools, and do not tell the consultant that no dedicated recording tool was found. Announce that the Playwright automation skill is being used, request the required headed-browser escalation, and start the recorder.
 
-The recording launcher must first prepare the codegen browser with the configured test-user login:
+The default recording launch opens Playwright codegen directly and lets the consultant log in manually in the codegen window. Do not auto-drive the test-user login on the default path:
 
-- Reuse `.skillautomation/auth-state.json` when it is fresh.
-- If state is missing, stale, or rejected, automatically log in with `IPE_USERNAME` / `IPE_PASSWORD` from environment variables or `/Users/suketsuman/Documents/LocalTestAutomation/.env.local`.
-- Save refreshed cookies, local storage, and session storage back to `.skillautomation/auth-state.json`.
-- Reuse `.skillautomation/codegen-chrome` as the Playwright codegen profile so the recorder opens already signed in.
+- Reuse `.skillautomation/codegen-chrome` as the persistent Playwright codegen profile so a previously signed-in profile opens already logged in.
+- If the codegen window shows a login/SSO page, let the consultant complete login manually. Wait for the consultant to confirm login is done before expecting recorded steps.
 - Never print credentials or store them in recording output.
+- Auto-login is opt-in only. Run the preflight (`RECORD_AUTO_LOGIN=1 npm run record`, which calls `node scripts/prepare-playwright-recording-auth.mjs`) solely when the consultant explicitly asks for automatic login. The preflight reuses/refreshes `.skillautomation/auth-state.json` with `IPE_USERNAME` / `IPE_PASSWORD` from environment variables or `/Users/suketsuman/Documents/LocalTestAutomation/.env.local`.
 
 1. Start recording from the active workspace root with the workspace helper:
 
@@ -108,20 +107,14 @@ If `package.json` is unavailable, run the helper script directly:
 scripts/start-playwright-recording.sh
 ```
 
-The helper first runs:
-
-```bash
-node scripts/prepare-playwright-recording-auth.mjs
-```
-
-Then it performs the equivalent of:
+By default the helper performs the equivalent of:
 
 ```bash
 ts=$(date +%Y%m%d_%H%M%S); mkdir -p "playwrightRecording/$ts"; npx playwright codegen --user-data-dir=.skillautomation/codegen-chrome --target=javascript --output="playwrightRecording/$ts/recording.spec.js" https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote
 ```
 
 2. Because Playwright codegen opens headed Chrome, request escalation before running it in Codex Desktop. Do not first attempt a sandboxed codegen launch. Ask once for the `npm run record` prefix when using the workspace helper.
-3. Tell the consultant to begin the target business steps in the opened browser. Login should already be complete. Ask for manual login only if the preflight reports missing credentials, MFA/SSO approval, or an automatic-login failure.
+3. Tell the consultant to begin the target business steps in the opened browser. If a login/SSO page appears, ask the consultant to log in manually and confirm when done before counting on recorded steps.
 4. After codegen exits, ask the consultant to confirm that recording is complete and whether the last captured flow should be converted. Use the newest timestamped folder under `playwrightRecording/` unless the user names a different folder.
 5. Read `playwrightRecording/<timestamp>/recording.spec.js`, then create consultant-friendly artifacts in the same folder:
 
@@ -134,10 +127,19 @@ ts=$(date +%Y%m%d_%H%M%S); mkdir -p "playwrightRecording/$ts"; npx playwright co
 - Replace generated ExtJS IDs with role, label, text, placeholder, or scoped field locators.
 - Use existing workspace helpers before adding new selectors.
 - For picker triggers, scope from the visible field label to the trigger in the same field container.
+- Do not infer a user-facing field name from an ExtJS component id or CSS class. Treat ids such as `iBEBusUnitLocal-*` only as hints; confirm the actual field from the accessible snapshot, screenshot, or visible label immediately beside the recorded input/trigger.
+- When adjacent fields have similar generated classes or shared picker structures, record and automate the exact visible label, such as `Org. Unit *` versus `Leading Site *`. If the recording clicked a generated trigger, map it back by inspecting its closest visible field container before writing `recording.steps.json`, the README, or the maintained spec.
+- For converted README files, use the visible label from the UI in `Test Data` and `Test Steps`; put any internal id/class only in `Automation Notes`.
 - For prior-project copy searches, enter the search text in the visible `//*[contains(@data-componentid,'iBESearchComboBox') and @aria-hidden="false"]` search component; do not type into a nearby label-scoped field.
+- For estimate `Open`/`Create` links that launch a new estimate tab, use the shared workspace helper `openEstimateFromActiveTab(...)` from `tests/playwright/support/twentyfive-ui.ts` when available. Do not click a broad text locator and continue on the original page. The helper or equivalent code must scope to the visible active tab panel, click the visible role `link` named `Open` or `Create`, start `page.waitForEvent('popup')` before handling any confirmation, click `Yes` or `Confirm & Open` only when it appears, and bring the popup/new tab to front. Do not fail merely because no confirmation appears. Do not assert the popup URL pattern or a specific estimate shell tab in this generic helper; let the calling test assert flow-specific page readiness when needed. Treat a missing popup/new tab as a failure even if the click call itself succeeds.
+- If an estimate popup/new tab or direct `#boe:`/app hash navigation appears as a blank white page after load, refresh that page once and wait for loading masks to clear before continuing. Apply the same one-time refresh when navigation finishes but the expected app UI/tab/locator does not appear and the page visually looks blank. Keep this as a single recovery refresh; if the page is still blank or the next flow-specific locator is missing afterward, report the normal failure with screenshot/trace evidence.
+- For labor pool picker cells in estimate Labor grids, do not use positional locators such as the last gridcell unless no column metadata exists. Prefer the row-scoped gridcell whose own `data-columnid`, descendant `data-columnid`, or nearest ancestor `data-columnid` normalizes to include `laborpool`; common generated classes such as `resourceGridLaborPoolColumn` are acceptable fallback evidence. Log or assert the resolved column id while hardening a new recording so a Labor Pool action is not accidentally mapped to Resource, Description, or another adjacent grid cell.
+- For quantity/FTE editors that render paired value and unit inputs, target the editable value input only. Exclude `readonly` inputs and unit-display ids such as `*-unit` before filling; otherwise Playwright may select the read-only unit input and fail even though the value editor is open.
 - Run locator scanning when stable locators are unclear.
 - Wrap unavoidable ExtJS fallbacks in named helpers with comments.
 - Add assertions after major actions: field entry, copy, tab load, popup open, and save.
+- Every maintained Playwright spec converted from a recording must update its recording README during execution. Use a shared README/evidence helper when available, such as `tests/playwright/support/readme-evidence.ts`, to wrap each `test.step`, capture a full-page screenshot after every step, attach that screenshot to Playwright, save the PNG under the recording folder's `evidence/` directory, and update the README's existing `Test Steps` section by adding the step status and screenshot link directly under matching numbered steps. Preserve the existing test-step wording and count; do not replace the manual/consultant step list with automation step names. Also refresh the README's `Latest Execution Evidence` section. On failure, capture the failed step screenshot before rethrowing.
+- After every Playwright execution, produce a chat-ready run report and include it in the final response. Prefer `node scripts/summarize-playwright-run.mjs test-results/playwright/results.json <recording-readme-path>` when a recording README exists. The final chat response must state pass/fail, command, created object URL/ID when available, report path, JSON result path, and all steps in a table with status, duration, and screenshot path. If screenshots or traces are missing, say so explicitly and explain whether the README evidence helper was used.
 
 7. Run the generated local automation with the narrow headed Playwright command, using escalation for headed browser launch. Keep codegen unchanged, and collect evidence from the converted Playwright run using screenshots and Playwright trace output. Save results under the usual `test-results/` and report folders.
 8. Immediately update the test case README after each converted automation run. Add or refresh a `Latest Execution Evidence` section with run status, command, screenshot path(s), trace path, error context path when present, and the main blocking step or created object URL/ID when available. Prefer relative Markdown links so screenshots are easy to open from the workspace.

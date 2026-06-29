@@ -15,7 +15,14 @@ export async function openAppHash(page: Page, hash: string, ready: Locator[], la
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes('ERR_ABORTED')) throw error;
   });
-  await waitForAnyVisible(page, ready, 45_000, label);
+  await waitForNoLoading(page, 30_000);
+  await refreshOnceIfBlankPage(page, label);
+  await waitForAnyVisible(page, ready, 45_000, label).catch(async (error) => {
+    await refreshOnceIfBlankPage(page, label, { force: true });
+    await waitForAnyVisible(page, ready, 45_000, label).catch(() => {
+      throw error;
+    });
+  });
   await waitForNoLoading(page, 5_000);
   logTiming(`open ${label}`, startedAt);
 }
@@ -34,6 +41,60 @@ export async function clickTab(page: Page, tab: string): Promise<void> {
   const locator = tabLocator(page, tab);
   await fastClick(locator, `${tab} tab`);
   await waitForNoLoading(page, 5_000);
+}
+
+export async function openEstimateFromActiveTab(page: Page, options: { label?: string } = {}): Promise<Page> {
+  const label = options.label ?? 'estimate';
+  const startedAt = Date.now();
+  const activePanel = page.locator("xpath=//*[@role='tabpanel' and @aria-hidden='false']").first();
+  const openLink = activePanel.getByRole('link', { name: /^Open$/ }).first();
+  const createLink = activePanel.getByRole('link', { name: /^Create$/ }).first();
+  const link = (await openLink.count()) > 0 && (await openLink.isVisible().catch(() => false)) ? openLink : createLink;
+
+  await expect(link, `visible ${label} Open/Create link should be available`).toBeVisible({ timeout: 20_000 });
+  await link.scrollIntoViewIfNeeded();
+  await link.click({ timeout: 20_000 });
+
+  const popupPromise = page.waitForEvent('popup', { timeout: 60_000 });
+  const yesButton = page.getByRole('button', { name: /^Yes$/i }).first();
+  const confirmAndOpen = page.getByRole('button', { name: /Confirm.*Open/i }).first();
+
+  if ((await yesButton.count()) > 0 && (await yesButton.isVisible().catch(() => false))) {
+    await yesButton.click({ timeout: 10_000 });
+  } else if ((await confirmAndOpen.count()) > 0 && (await confirmAndOpen.isVisible().catch(() => false))) {
+    await confirmAndOpen.click({ timeout: 10_000 });
+  }
+
+  const estimatePage = await popupPromise;
+  await estimatePage.waitForLoadState('domcontentloaded', { timeout: 45_000 }).catch(() => undefined);
+  await estimatePage.bringToFront().catch(() => undefined);
+  await waitForNoLoading(estimatePage, 30_000);
+  await refreshOnceIfBlankPage(estimatePage, label);
+  logTiming(`open ${label} popup`, startedAt);
+  return estimatePage;
+}
+
+export async function refreshOnceIfBlankPage(page: Page, label = 'page', options: { force?: boolean } = {}): Promise<void> {
+  if (!options.force && !(await looksBlank(page))) return;
+
+  console.warn(`[${label}] page looked blank or did not expose expected UI; refreshing once before continuing.`);
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 }).catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('ERR_ABORTED')) throw error;
+  });
+  await waitForNoLoading(page, 30_000);
+}
+
+async function looksBlank(page: Page): Promise<boolean> {
+  if (/^(about:blank|chrome-error:)/i.test(page.url())) return true;
+
+  const bodyText = await page.locator('body').innerText({ timeout: 5_000 }).catch(() => '');
+  if (bodyText.replace(/\s+/g, '').length > 0) return false;
+
+  const visibleLandmark = page
+    .locator("xpath=//*[@role='tab' or @role='button' or self::a or contains(@class,'x-panel') or contains(@class,'x-grid')]")
+    .first();
+  return !(await visibleLandmark.isVisible({ timeout: 2_000 }).catch(() => false));
 }
 
 export async function fastClick(locator: Locator, name: string, timeoutMs = 5_000): Promise<void> {

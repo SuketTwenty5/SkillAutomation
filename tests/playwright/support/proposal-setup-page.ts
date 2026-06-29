@@ -80,6 +80,7 @@ export class ProposalSetupPage {
       await this.openTypedSetupRoute();
       return;
     }
+    await this.ensureNewButtonVisible();
     await this.fastClick(this.newButton, 'New button');
     await this.waitForSetupPage();
   }
@@ -580,6 +581,23 @@ export class ProposalSetupPage {
 
   private async isProposalsActionReady(): Promise<boolean> {
     return (await this.newButton.count()) > 0 && (await this.newButton.isVisible().catch(() => false));
+  }
+
+  private async ensureNewButtonVisible(): Promise<void> {
+    if (await this.isProposalsActionReady()) return;
+
+    await this.fastClick(this.proposalsTab, 'PROPOSALS tab retry', 8_000).catch(() => undefined);
+    await waitForNoLoading(this.page, 10_000);
+    if (await this.isProposalsActionReady()) return;
+
+    console.warn('[proposal setup] New button was not visible; refreshing Proposals once before retrying.');
+    await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 }).catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('ERR_ABORTED')) throw error;
+    });
+    await waitForNoLoading(this.page, 30_000);
+    await this.fastClick(this.proposalsTab, 'PROPOSALS tab after refresh', 8_000).catch(() => undefined);
+    await waitForAnyVisible(this.page, [this.newButton], 30_000, 'New button on Proposals page after refresh');
   }
 
   private async openTypedSetupRoute(): Promise<void> {
