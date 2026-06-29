@@ -566,6 +566,56 @@ install_node_dependencies() {
   fi
 }
 
+ensure_playwright_codegen() {
+  # Playwright codegen powers the consultant recording workflow
+  # (scripts/start-playwright-recording.sh -> `npx playwright codegen`, i.e.
+  # `npm run record`). install_node_dependencies skips the browser download for
+  # CDP-based test runs, but codegen launches a Playwright-managed Chromium, so
+  # the recorder needs BOTH the Playwright npm package and the Chromium binary.
+  local pkg_json="$WORKSPACE_DIR/package.json"
+
+  if ! have npx; then
+    warn "npx not found on PATH (it ships with Node.js); skipping Playwright codegen setup."
+    warn "Recording (npm run record) will not work until Node.js/npx is available."
+    return
+  fi
+  log "npx found: $(npx --version 2>/dev/null || printf 'installed')"
+
+  if [[ ! -f "$pkg_json" ]]; then
+    log "No package.json in workspace; skipping Playwright codegen setup"
+    return
+  fi
+
+  # Make sure the Playwright CLI resolves from the workspace (installed by
+  # `npm install`). If not, install it locally so `npx playwright` works.
+  if ( cd "$WORKSPACE_DIR" && npx --no-install playwright --version >/dev/null 2>&1 ); then
+    log "Playwright CLI found: $(cd "$WORKSPACE_DIR" && npx --no-install playwright --version 2>/dev/null)"
+  else
+    log "Playwright CLI not found in workspace; installing playwright + @playwright/test"
+    if ! ( cd "$WORKSPACE_DIR" && npm install --save-dev playwright @playwright/test ); then
+      warn "Failed to install Playwright; 'npm run record' / codegen will not work."
+      warn "Install it manually: cd \"$WORKSPACE_DIR\" && npm install --save-dev playwright @playwright/test"
+      return
+    fi
+  fi
+
+  # Ensure the Chromium browser that codegen launches is present. This was
+  # intentionally skipped by install_node_dependencies (browser download off).
+  log "Installing Playwright Chromium browser for codegen recording"
+  if ! ( cd "$WORKSPACE_DIR" && npx --no-install playwright install chromium ); then
+    warn "Failed to install Playwright Chromium; recording may fail."
+    warn "Install it manually: cd \"$WORKSPACE_DIR\" && npx playwright install chromium"
+    return
+  fi
+
+  # Final sanity check that codegen itself is callable.
+  if ( cd "$WORKSPACE_DIR" && npx --no-install playwright codegen --help >/dev/null 2>&1 ); then
+    log "Playwright codegen is ready (run it with: npm run record)"
+  else
+    warn "Playwright codegen check failed; verify with 'npx playwright codegen --help' in $WORKSPACE_DIR."
+  fi
+}
+
 install_codex_skill_copy() {
   local source_skill="$WORKSPACE_DIR/skills/$SKILL_NAME"
   local dest_root="$HOME/.codex/skills"
@@ -803,6 +853,7 @@ main() {
   ensure_selected_agent
   clone_or_update_workspace
   install_node_dependencies
+  ensure_playwright_codegen
   install_codex_skill_copy
   install_with_npx_skills_if_requested
   select_app_url
