@@ -33,4 +33,25 @@ if [[ "$NODE_MAJOR" == "23" ]]; then
 fi
 
 cd "$REPO_ROOT"
+
+# POM guard: fail fast if any enforced spec contains inline locators (bypass with POM_GUARD=off).
+if [[ "${POM_GUARD:-on}" != "off" && -x "$REPO_ROOT/node_modules/.bin/eslint" ]]; then
+  echo "==> POM guard: checking specs for inline locators (set POM_GUARD=off to bypass)"
+  if ! "$REPO_ROOT/node_modules/.bin/eslint" "tests/playwright/**/*.spec.ts"; then
+    echo "ERROR: POM guard failed — a spec contains inline locators. Move them into tests/playwright/support/pom/ and call the page-object method." >&2
+    exit 1
+  fi
+fi
+
+# Type-check gate: catch build-time errors before launching the browser (bypass with TYPECHECK=off).
+# Notably turns "a BasePage method called on ProposalSetupPage (which does not extend BasePage)" from a
+# runtime "is not a function" crash into a fast build failure.
+if [[ "${TYPECHECK:-on}" != "off" && -f "$REPO_ROOT/node_modules/typescript/bin/tsc" ]]; then
+  echo "==> Type-check: tsc --noEmit (set TYPECHECK=off to bypass)"
+  if ! "$NODE_BIN" "$REPO_ROOT/node_modules/typescript/bin/tsc" --noEmit -p "$REPO_ROOT/tsconfig.json"; then
+    echo "ERROR: Type-check failed — fix the TypeScript errors above before running." >&2
+    exit 1
+  fi
+fi
+
 "$NODE_BIN" "$REPO_ROOT/node_modules/playwright/cli.js" test "$@"

@@ -441,6 +441,48 @@ write_workspace_env() {
   } > "$WORKSPACE_ENV_FILE"
 }
 
+write_credentials_env() {
+  CREDENTIALS_ENV_FILE="$WORKSPACE_DIR/.env.local"
+  local default_username="tech@twenty5.com"
+  local username="" password=""
+
+  if [[ -f "$CREDENTIALS_ENV_FILE" ]]; then
+    log "Credentials file already exists; leaving it unchanged: $CREDENTIALS_ENV_FILE"
+    return
+  fi
+
+  if [[ -n "${IPE_USERNAME:-}" && -n "${IPE_PASSWORD:-}" ]]; then
+    username="$IPE_USERNAME"
+    password="$IPE_PASSWORD"
+    log "Writing automation credentials from environment: $CREDENTIALS_ENV_FILE"
+  elif is_interactive; then
+    printf '\nTwenty5 iPE login for automation (saved only to %s, git-ignored, never committed).\n' "$CREDENTIALS_ENV_FILE"
+    printf 'IPE username [%s]: ' "$default_username"
+    read -r username || true
+    [[ -n "$username" ]] || username="$default_username"
+    printf 'IPE password (input hidden): '
+    read -rs password || true
+    printf '\n'
+  else
+    warn "No IPE credentials provided and setup is non-interactive."
+    warn "Before running automation, create $CREDENTIALS_ENV_FILE (copy .env.local.example) or set IPE_USERNAME/IPE_PASSWORD."
+    return
+  fi
+
+  if [[ -z "$password" ]]; then
+    warn "No password entered; skipping credentials file."
+    warn "Before running automation, create $CREDENTIALS_ENV_FILE (copy .env.local.example)."
+    return
+  fi
+
+  ( umask 077; {
+      printf 'IPE_USERNAME=%s\n' "$username"
+      printf 'IPE_PASSWORD=%s\n' "$password"
+    } > "$CREDENTIALS_ENV_FILE" )
+  chmod 600 "$CREDENTIALS_ENV_FILE" 2>/dev/null || true
+  log "Saved automation credentials to $CREDENTIALS_ENV_FILE (git-ignored)."
+}
+
 write_claude_desktop_handoff() {
   [[ "$SELECTED_AI_AGENT" == "claude-desktop" ]] || return 0
 
@@ -858,6 +900,7 @@ main() {
   install_with_npx_skills_if_requested
   select_app_url
   write_workspace_env
+  write_credentials_env
   write_claude_desktop_handoff
   copy_claude_desktop_prompt
   start_debug_chrome

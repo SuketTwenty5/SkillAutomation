@@ -15,6 +15,10 @@ test-report.json
 .env
 .env.local
 *.env.local
+tests/playwright/support/pom/.verified.json
 .skillautomation/
+# Plaintext browser session state (bearer cookies/tokens) — never commit.
+auth.json
+auth-state.json
 __pycache__/
 *.pyc

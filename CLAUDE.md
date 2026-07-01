@@ -29,6 +29,9 @@ scripts/run-playwright-test.sh tests/playwright/<spec>.spec.ts --headed --retrie
 
 ## Auth & Chrome (guardrails)
 
+- **First-time setup:** `cp .env.local.example .env.local` at the repo root, then fill in real
+  `IPE_USERNAME` / `IPE_PASSWORD` (or set them as env vars). `.env.local` is git-ignored — never
+  commit it; commit only `.env.local.example`.
 - Use one managed **headed** Playwright Chrome launch — do not start Chrome separately or attach to
   a debug port. Persistent profile lives under `.skillautomation/`.
 - Reuse browser state (`auth.json` / `.skillautomation/auth-state.json`). Auto-login from
@@ -37,6 +40,12 @@ scripts/run-playwright-test.sh tests/playwright/<spec>.spec.ts --headed --retrie
 - **Never print, echo, store, or commit credentials or `auth-state.json`.** `.skillautomation/`
   must stay git-ignored. Only ask the consultant if MFA/SSO is required, creds are missing, or
   auto-login fails (report as `blocked`).
+- **App-shell wait is tiered, never wipe-first.** If the signed-in app shell is missing, give the
+  loader the full `PLAYWRIGHT_LOGIN_WAIT_MS` budget before any reload; recover (reload/re-login) only
+  on positive evidence of a lost session (visible login form / `about:blank` / `chrome-error:`). A
+  slow-but-authenticated app origin (e.g. `#quote`) is not a reason to reload or wipe. Wipe the
+  persistent profile only as a bounded last resort after re-login has also failed. Full policy in the
+  SKILL.md "App Shell Wait And Session Recovery" section.
 
 ## Source-of-truth rules
 
@@ -50,9 +59,20 @@ scripts/run-playwright-test.sh tests/playwright/<spec>.spec.ts --headed --retrie
   ```
 - Classify each step: `mapped`, `scanned-locator`, `generated-glue`, or `blocked`. A step is
   `mapped` only if the automation performs that same source action with that same source value.
+- **Every conversion creates a new timestamped spec.** When asked to convert a source to a
+  Playwright script, always write a NEW `tests/playwright/<slug>-<YYYYMMDD-HHMMSS>.spec.ts` — never
+  overwrite or edit an existing spec in place. On a full match copy the matching spec's content into
+  the new file; on a partial match copy the reusable steps/helpers; otherwise generate fresh. Then
+  run the new file (not the original). Full detail in the SKILL.md "Spec File Naming And Reuse Rule".
 
 ## Locator, date, and title rules
 
+- **Page Object Model:** locators live only in `tests/playwright/support/pom/`; specs import from
+  `./support/pom` and never declare inline `.locator()`/`getBy*()` (enforced by `npm run lint:pom`,
+  which `run-playwright-test.sh` runs automatically). Find a control by visible label in
+  `pom/POM-INDEX.md` (`npm run pom:index`); seed names on demand with `npm run locator:find -- "<label>"`
+  then re-anchor live — never bulk-generate the historical catalog. Trust is computed:
+  `POM_VERIFY=1 … && npm run pom:verify` → `.verified.json`. Full detail in the SKILL.md "Page Object Model" section.
 - Prefer role/name, label, placeholder, visible text → stable attributes → scoped ExtJS →
   historical XPath → positional XPath (fallback only, mark it). Replace generated ExtJS IDs with
   stable locators; never infer a field name from an ExtJS id/class — confirm from the visible label.
@@ -61,6 +81,32 @@ scripts/run-playwright-test.sh tests/playwright/<spec>.spec.ts --headed --retrie
   Prefer `ProposalSetupPage.setEstimatedProjectStart(...)`.
 - **Bid description/title** must end with a human-readable timestamp — use
   `ProposalSetupPage.setProposalTitle(...)`; don't double-stamp.
+- **Pre-generation guards (enforced on every run).** `run-playwright-test.sh` runs `eslint` **and**
+  `tsc --noEmit`. Note `ProposalSetupPage` does NOT extend `BasePage`, so call shared helpers on `est`
+  (EstimatePage), never on `setup`. Assert "auto-populated with today" dates via the `$todayDate`
+  sentinel (never a literal / spec `new Date()`); assert user/master-data-derived fields (Pursuit
+  Manager, Location) via `EstimatePage.expectFieldValueOrVariance(...)`; end every mutating step with a
+  hard positive post-condition; never `page.reload()` in a spec (lint-banned). Full policy in the
+  SKILL.md "Pre-Generation Checklist And Enforced Guards".
+- **Save is a hover-to-reveal split button.** Hover `//*[@data-qtip="Save" and @aria-hidden="false"]//*[@data-ref="btnIconEl"]`
+  (don't click), then click the option link `//*[@role="menu" and @aria-hidden="false"]//*[@class="x-menu-item-link" and @aria-hidden="false"]//*[text()="${option}"]`
+  (default `Save without Check`), then **wait for completion** (Data-saved toast + Ext.Ajax idle + no
+  progressbar/modal) before proceeding — don't race the save API. Use `EstimatePage.saveViaMenu(...)`;
+  persist FTE/grid edits this way BEFORE any refresh/roll-up. Full policy in the SKILL.md "Save Menu Rule".
+- **Cost/price roll-up is recognised by intent, not the step name.** Trigger the procedure when a step
+  does **any** of: expects the toast `Costs/revenues & formula-based costs and prices updated and rolled-up`;
+  tells you to click **Update Cost & Price(s)**; targets `//*[@titlelink="updateCostsWithFormula"]`; or
+  requires verifying a status as **Updated** (`Needs Refresh`/`Updating (n)`/`Currently running`). Then:
+  refresh → click `//*[@titlelink="updateCostsWithFormula"]` → confirm the running status → poll the
+  More-menu item `[itemId="mp_more_item_update_costs_btn"]` until `Finished` (reload while running). Use
+  `EstimatePage.updateCostsAndWaitForFinished(...)`; never drive cost roll-ups through the Save-menu
+  "Check & Save". Full policy in the SKILL.md "Cost/Price Update And Status-Check Rule".
+- **Labor/estimate grids are ExtJS locked (split) grids.** Add the first row via a **real** click on
+  `a[data-grigaddlink] div[text()]` (a forced click is a no-op); resolve cells by header-x + row-y
+  (never absolute `nth()`); edit in-cell combos by selecting the ExtJS **store record on the combo
+  component** + Tab-to-commit (the boundlist UI paints `offsetParent=null` for a combo opened after a
+  prior edit, so clicking options is unreliable); treat Role→Location as a coupled control (assert
+  mechanism, record value variance). Full policy in the SKILL.md "Estimate / Labor Locked-Grid Rules".
 
 ## Safety
 

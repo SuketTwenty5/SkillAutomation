@@ -15,6 +15,11 @@
     "record:pw": "scripts/start-playwright-recording.sh",
     "record:auth": "node scripts/prepare-playwright-recording-auth.mjs",
     "source:find": "node skills/skill-playwright-automation/scripts/find-source-artifact.mjs",
+    "locator:find": "node skills/skill-playwright-automation/scripts/find-historical-locator.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint:pom": "eslint \"tests/playwright/**/*.spec.ts\"",
+    "pom:index": "node scripts/generate-pom-index.mjs",
+    "pom:verify": "node scripts/pom-verify.mjs",
     "test:report": "cat test-report.json"
   },
   "keywords": [
@@ -27,5 +32,11 @@
   "license": "MIT",
   "dependencies": {
     "playwright": "^1.61.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "eslint": "^9.39.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.62.1"
   }
 }

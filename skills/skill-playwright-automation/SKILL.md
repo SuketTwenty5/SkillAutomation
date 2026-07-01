@@ -28,11 +28,11 @@ Use Playwright as the browser executor. Reuse local browser state, focused actio
 Prefer this order:
 
 1. Cached source artifacts for the exact PDF/Scribe/manual URL or title.
-2. Existing Playwright specs and support helpers in the active workspace.
-3. Focused runtime locators in `tests/**/support/*locators*`.
-4. Fresh page-scanned locators saved back into this skill for future reference.
-5. Historical locator catalog in `references/ipe-auto-tests-locators.json`.
-6. New Playwright glue using stable live locators.
+2. Existing page objects in `tests/playwright/support/pom/` — the single source of locators — plus support helpers (`twentyfive-ui.ts`, `twentyfive-cdp.ts`).
+3. Existing Playwright specs that already call the POM.
+4. Fresh page-scanned locators (`scan-page-locators.mjs`), added into a page object.
+5. Historical catalog as a naming/seed suggestion only, via `node skills/skill-playwright-automation/scripts/find-historical-locator.mjs "<query>"`; re-anchor against the live page before use.
+6. New Playwright glue using stable live locators, added into a page object (never inline in a spec).
 
 ## Running Tests
 
@@ -45,6 +45,14 @@ scripts/run-playwright-test.sh tests/playwright/<spec>.spec.ts --headed --retrie
 ```
 
 ## Auth And Chrome
+
+**First-time setup:** copy the credentials template to a git-ignored `.env.local` at the repo root and fill in real values (or set `IPE_USERNAME` / `IPE_PASSWORD` in your environment):
+
+```bash
+cp .env.local.example .env.local   # then edit .env.local with your creds
+```
+
+`.env.local` is git-ignored, so credentials never get committed. Do not commit `.env.local`; commit only `.env.local.example`.
 
 Use a managed headed Playwright Chrome launch. Keep the launch simple: one approved command should both open Chrome and run the target spec. Do not start Chrome separately and do not attach to a debug port.
 
@@ -69,6 +77,33 @@ npx playwright open --save-storage=auth.json https://approuter-twenty5ipe-dev.cf
 - If `auth.json` is missing or expired, use automatic login from environment variables or a git-ignored `.env.local` at the repo root (override with `IPE_ENV_FILE`).
 - Ask the consultant only if the app requires MFA/SSO interaction, the credentials are missing, or automatic login fails. Report that condition as `blocked` with the exact page/error observed.
 - Never store usernames/passwords in source, reports, skill files, or committed config.
+
+### App Shell Wait And Session Recovery
+
+When the signed-in Twenty5 app shell does not appear, recover in tiers — never wipe first. A missing
+app shell has many causes (slow ExtJS loader stalling near 95%, a stale locator, a network blip, a
+genuinely lost session); only the last is fixed by wiping, and wiping the others destroys a valid
+warm session and forces a slower cold login.
+
+1. **Wait the full budget continuously.** Poll for the app shell for the whole
+   `PLAYWRIGHT_LOGIN_WAIT_MS` window before any reload. A premature reload restarts the SPA and burns
+   the budget — this, not a poisoned session, is the usual cold-start timeout cause.
+2. **One soft reload** — only when there is positive evidence the session is gone or the tab is dead:
+   a visible login/identity-provider form, `about:blank`, or a `chrome-error:` page. If the URL is on
+   the signed-in app origin (e.g. `#quote`), the session is valid and the app is merely slow — do
+   **not** reload and do **not** wipe.
+3. **Re-login** from `.env.local`/env credentials when a login form is actually present (the
+   auto-login/auth-state path already does this).
+4. **Wipe only as a bounded last resort.** If, and only if, the full-budget wait + reload + re-login
+   have all failed *and* the page still shows a login/auth-error state, wipe
+   `.skillautomation/auth-state.json` and `.skillautomation/playwright-chrome/` and cold-login **once**
+   (guard with a per-run counter so it cannot loop; log what was wiped). Otherwise keep the warm
+   profile — "do not clear cache unless the user asks or the app is demonstrably poisoned."
+
+Session cookies persisted in the profile (`.skillautomation/playwright-chrome/Default/Cookies`) and
+`auth-state.json` are bearer credentials: keep `.skillautomation/` git-ignored, never print them or
+attach them to reports, and treat failure `trace.zip` files (which capture request headers) as
+sensitive.
 
 ## Speed And Interaction Rules
 
@@ -113,8 +148,8 @@ For Scribe URLs specifically, prefer an existing `*.steps.json` artifact over br
 4. Inspect active Playwright tests and helpers before writing code. Use similar tests only to borrow helper calls, waits, locator patterns, and page-object structure.
 5. Scan the live page(s) for locators before adding new selectors.
 6. Map each manual step to an existing action, scanned locator, or historical locator.
-7. Generate the smallest PDF-specific Playwright spec/helper change needed.
-8. Run the narrowest headed Playwright command for the PDF-specific spec. Do not run a nearby suite, such as Manufacturing Proposal, just because it contains useful reference code.
+7. Create a **new timestamped spec file** for this conversion (see "Spec File Naming And Reuse Rule"): copy from a full/partial match when one exists, otherwise generate fresh. Keep the change the smallest that covers the source steps.
+8. Run the narrowest headed Playwright command for the **newly created** spec. Do not run the original spec it was copied from, and do not run a nearby suite, such as Manufacturing Proposal, just because it contains useful reference code.
 9. Save screenshots, traces, JSON results, and generated reports under the repo's evidence/report folders.
 
 If the app requires a unique value but the PDF gives a fixed value, keep the PDF value in `test_data` and create an explicitly named derived runtime value such as `runtime_proposal_title`. Report the variance in `Mapped steps` or `Unmapped/blocked steps`; do not silently replace the PDF variable.
@@ -135,6 +170,61 @@ Classify every step:
 - `blocked`: requires login, missing data, unsafe production mutation, or unclear intent.
 
 When reporting coverage, classify against the PDF steps, not against a similar existing suite. A step is `mapped` only if the automation performs that same PDF action with the same PDF variable.
+
+## Spec File Naming And Reuse Rule
+
+Whenever anyone asks to convert a source (PDF, Scribe, Confluence/manual, `.md` test case, or plain-English steps) into a Playwright script, **always create a brand-new spec file** — never overwrite, edit, or re-run an existing spec in place.
+
+- **New file, every time.** Write the spec to `tests/playwright/<slug>-<YYYYMMDD-HHMMSS>.spec.ts`, where `<slug>` is derived from the source (e.g. the test-case ID lowercased) and the stamp is the current local date and time (matching the repo's existing `recording-YYYYMMDD-HHMMSS` convention). Two conversions of the same source therefore never collide, and each run is traceable to when it was generated.
+- **Reuse existing work by copying, not editing.** Before generating, look for an existing match with `node skills/skill-playwright-automation/scripts/find-source-artifact.mjs "<url|path|title>"` and by scanning existing specs and `*.steps.json` artifacts:
+  - **Full match** — an existing spec already covers the same source steps and test data: copy that spec's content into the new timestamped file as the starting point, then only re-point the source path and refresh timestamps/derived runtime values.
+  - **Partial match** — an existing spec covers some steps or shares helper/POM patterns: copy the reusable portions (matching `test.step` blocks, helper calls, POM usage) into the new file and fill the remaining steps with newly mapped/scanned actions.
+  - **No match** — generate a fresh spec in the new file.
+- **Run the new file.** Always execute the newly created timestamped spec with the narrowest headed command; do not run the original spec it was copied from.
+- **POM rule still applies.** Only the spec file is new — locators still live in `tests/playwright/support/pom/` and the spec imports them from the barrel (see "Page Object Model"). Companion artifacts (e.g. `*.steps.json`) should share the new spec's file stem so evidence stays traceable.
+
+## Pre-Generation Checklist And Enforced Guards
+
+A full-match copy is a starting point, not a validated spec — its recording-time assumptions can be
+stale against the current app/master-data. Before running a converted spec, satisfy this checklist. The
+runner (`run-playwright-test.sh`) enforces the first two automatically:
+
+- **Lint + type-check both pass** — the runner runs `eslint` (POM guard) **and** `tsc --noEmit` on every
+  run. The type-check exists because **`ProposalSetupPage` does NOT extend `BasePage`** (the other POM
+  classes do): a shared helper like `startToastObserver`/`saveViaMenu`/`expectFieldValue` must be called
+  on an `EstimatePage` instance (`est.*`), never on `setup` — calling it on `setup` is now a build error,
+  not a runtime crash.
+- **Every value the source labels "auto-populated"/"derived" is asserted by mechanism, never by a
+  recording-time literal:**
+  - today-populated dates → assert with the **`$todayDate`** sentinel (`est.expectFieldValue('Planned Start', '$todayDate')`); never a hardcoded date or a spec-local `new Date()`.
+  - user/master-data-derived fields (Pursuit Manager, Location, rates) → `est.expectFieldValueOrVariance(label, sourceValue, testInfo, {...})` (asserts populated, records a `variance` annotation on mismatch); the exact KPI values (Price/Cost/Margin) → assert the band contains `USD` + record variances. Keep the source value in `test_data`.
+- **Every mutating `test.step` ends with at least one HARD positive post-condition** — a bare
+  `await expect(...).toBe*` with no `.catch`/`{optional:true}` proving the action happened (saved URL
+  present, no-records overlay hidden, cell value committed, KPI band shows `USD`). `.catch(() => …)` /
+  `{optional: true}` are permitted **only** for genuinely env-derived variances that are also recorded
+  via `testInfo.annotations.push({ type: 'variance', … })`. Never infer success from "no error thrown".
+- **Live-probe any control the template touches whose value/markup is env-derived** before trusting the
+  copied assertion — do not re-run the full suite to discover a stale value; a targeted probe is cheaper.
+- **Never `page.reload()` in a spec** (lint-banned): a reload over an unsaved ExtJS form discards edits.
+  When a value is late because an ExtJS field auto-calcs from another (dates, Location←Role, Cost
+  Center←Profit Center, KPIs), **poll the coupled field to settle** (`waitForFieldValue`/`expect.poll`);
+  reloading is done only inside POM methods (`updateCostsAndWaitForFinished`, which self-guards by
+  saving first).
+- **Legacy grid specs are NOT reuse sources.** `create-capital-project-*` and
+  `create-engineering-services-*` predate the POM and use banned inline positional gridcell locators
+  (they survive only in the ESLint `BASELINE`). Do not copy them for a "similar prior project"
+  conversion — start from a POM-based spec such as `tc-prk-simpleconsulting-001*.spec.ts`.
+
+## Page Object Model
+
+Locators live **only** in page objects under `tests/playwright/support/pom/`. Specs import from the barrel (`./support/pom`) and call methods/getters — never declare inline locators.
+
+- **The rule is enforced.** `npm run lint:pom` (ESLint, also run automatically by `scripts/run-playwright-test.sh`) fails any spec that calls `.locator(...)` or `getBy*(...)` directly. Builder helpers imported from `support/` (e.g. `textLocator`, `clickTab`) are allowed — they are not inline locators. Bypass only in an emergency with `POM_GUARD=off`. There is a ratchet baseline in `eslint.config.mjs` of specs that predate the rule; burn it down (remove entries) as you migrate them, and never add to it.
+- **Two-shaped.** A page object exposes stable single elements as `readonly Locator` getters, and dynamic controls (grid cell by column, inline editors, dropdowns, dialogs) as parameterized methods. See `EstimatePage` for the grid pattern and `BasePage` for shared form/save/toast controls. `tc-prk-simpleconsulting-001.spec.ts` is the reference for a fully POM-sourced spec.
+- **Build a spec from a source using the POM:** for each step, find the control by its **visible label** in `tests/playwright/support/pom/POM-INDEX.md` (regenerate with `npm run pom:index`) → call that member. If it is missing, add it to the right page object first (proven locator → live scan → historical seed), then call it.
+- **On-demand seeding only — never bulk-generate.** The historical catalog is 100% stale (old build) and mostly untouched pages. Pull a *naming/intent* suggestion for one control with `npm run locator:find -- "<label or class>"`, then **re-anchor** the actual locator against the live page (`scan-page-locators.mjs`, preferring visible label/role) before adding it. Do not generate the catalog into the POM wholesale.
+- **Never infer names from ExtJS ids.** Name getters from the visible label; put any id/class hint in a comment. Tag brittle fallbacks (e.g. positional `nth()`) with `@fallback-positional` so a passing run cannot launder them into "trusted".
+- **Computed trust, not comments.** Trust is derived from execution, not prose. Run a verification pass with `POM_VERIFY=1 scripts/run-playwright-test.sh <spec> --retries=0` (forces a trace on green runs), then `npm run pom:verify` to write `tests/playwright/support/pom/.verified.json` (generated; selectors + run metadata only). A locator counts as verified iff it appears there from the latest green run, so trust lapses automatically when a run is red or absent. Add `@label <visible label>` JSDoc to locator members so they surface in the index.
 
 ## Locator Scanning Rule
 
@@ -186,6 +276,97 @@ the final value typed into the application must end with a human-readable date a
 - Do not append a second timestamp if the value already ends with a date/time suffix.
 - Assertions against the description/title field should compare against the timestamped runtime value.
 - When converting source steps into a spec, replace direct `.fill(...)` calls for this placeholder with the shared helper or an equivalent local wrapper that applies the same suffix.
+
+## Save Menu Rule
+
+The Save control is a **hover-to-reveal split button**, not a click target. Whenever a step saves via the
+Save icon (e.g. source step "Click the Save icon (floppy disk) dropdown → Save options appear: Check &
+Save, Save without Check, Check without Save"):
+
+1. **Hover** the Save floppy icon: `//*[@data-qtip="Save" and @aria-hidden="false"]//*[@data-ref="btnIconEl"]`
+   (hover, do not click; retry with click-outside + re-hover if the menu doesn't appear).
+2. **Click** the option link by its visible text:
+   `//*[@role="menu" and @aria-hidden="false"]//*[@class="x-menu-item-link" and @aria-hidden="false"]//*[text()="${option}"]`.
+   **Default `option` = `Save without Check`.**
+3. **Wait for the action to complete before proceeding** — do not race ahead. Confirm completion by: the
+   `Data saved successfully` toast (captured by the toast observer even if transient), then ExtJS settle —
+   `!Ext.Ajax.isLoading()`, no `.x-mask[role=progressbar]` visible, and no `window[modal=true]` visible.
+
+In `SkillAutomation`, use `EstimatePage.saveViaMenu(option = 'Save without Check')`, which hovers, clicks
+the option by text, and calls `waitForActionComplete()`. Persist grid edits (e.g. FTE) with this BEFORE a
+refresh/roll-up — refreshing over an unsaved edit discards it and makes the roll-up compute on empty data.
+
+## Cost/Price Update And Status-Check Rule
+
+**Recognise this step by intent, not by its name or number.** A step is a cost/price roll-up step
+whenever **any** of the following is true — treat them as equivalent triggers for the procedure below:
+
+- its expected result contains the toast `Costs/revenues & formula-based costs and prices updated and rolled-up`; **or**
+- it tells you to click **Update Cost & Price(s)** (by that label/instruction); **or**
+- it targets the element `//*[@titlelink="updateCostsWithFormula"]`; **or**
+- it requires verifying/checking a calculation **status as "Updated"** (or reads a status such as
+  `Needs Refresh` / `Updating (n)` / `Currently running`).
+
+Do **not** key off the step label/number (it may say "Check & Save", "Update Costs", "Calculate", etc.).
+When any trigger above matches, apply this procedure:
+
+1. **Refresh first, then wait for load.** Reload the proposal and wait for the app shell + KPI header to
+   finish loading before interacting — the header is often mid-`Updating (n)` right after a grid edit.
+2. **Trigger the calculation** by clicking the Update Cost & Prices control:
+   `//*[@titlelink="updateCostsWithFormula"]`. Do **not** drive cost roll-ups through the Save
+   split-button "Check & Save" menu — that path is timing-fragile while background jobs are in flight.
+3. **Confirm the running status.** A `Currently running` / `Running` status becomes visible a few seconds
+   after clicking `updateCostsWithFormula` — poll for it rather than asserting immediately.
+4. **Wait for Finished** by polling the status item in the More menu, reloading while it is still
+   running. Open the menu via the `button[tooltip=More]` component, read the item
+   `[itemId="mp_more_item_update_costs_btn"]` text, and close the menu between reads:
+   - text includes `Finished` → done.
+   - text includes `Currently running` → fire the `Reload` component's handler
+     (`tooltip`/`qtip === "Reload"`), then wait until `!Ext.Ajax.isLoading()`, no
+     `window[modal=true]` is visible, and no `.x-mask[role=progressbar]` is visible, then poll again.
+   Bound the loop (~15 min) and log each iteration's status text.
+
+In `SkillAutomation`, use `EstimatePage.updateCostsAndWaitForFinished(...)`, which implements exactly this
+refresh → `updateCostsWithFormula` → running → poll-More-status(Finished/reload) sequence. Only the exact
+KPI values that follow (Total Price/Cost/Margin) are rate/master-data derived — verify the roll-up ran and
+record value differences as variances (see the coupled-control principle below).
+
+## Estimate / Labor Locked-Grid Rules
+
+The Labor Resources and estimate grids are ExtJS **locked (split) grids**: one logical row is rendered
+across a frozen left sub-grid (`x-grid-inner-locked`: WBS, Grade, Location, Role, …) and a scrollable
+right sub-grid (`x-grid-inner-normal`: Start, End, FTE, Effort, …), plus a hidden pivot grid. Generate
+grid code with these rules — each is proven against the live app:
+
+- **Add the first row on an empty grid** by clicking the empty-state add link — the inner `div[text()]`
+  of the `a[data-grigaddlink='true']` anchor — with a **real (non-forced) Playwright click** so the
+  ExtJS `ibe-add-row` delegated handler fires. A forced or synthetic `element.click()` on the anchor
+  wrapper is a no-op that never creates a row. Assert the overlay is gone / a real row exists as the
+  post-condition; never infer success from "no error thrown". Locator:
+  `//*[@role='tabpanel' and @aria-hidden='false']//*[@aria-hidden='false' and (@role='grid' or @role='treegrid')]//*[@data-grigaddlink='true']//div[text()]`
+- **Never resolve cells with absolute `getByRole('gridcell').nth(N)`.** That index counts across BOTH
+  sub-grids and hidden columns, so a right-grid column (FTE/Effort) is unreachable positionally. Resolve
+  a cell by the column **header's x-position + the data row's y-position** and click that point
+  (coordinate resolution). Header text carries a hidden "Cell value has been edited" a11y span, so match
+  headers with `starts-with(normalize-space(.), 'FTE')`, not `= 'FTE'`.
+- **Edit an in-cell combo by selecting the STORE RECORD, not the boundlist UI.** Double-click the cell
+  to open + focus the ExtJS cell editor, wait a fixed settle (~700ms), then type real keystrokes into the
+  focused editor to drive the remote/`forceSelection`/`minChars` query and load the combo's store. Then
+  select the matching record **on the combo component itself** and `Tab` to commit. Do NOT rely on
+  clicking a boundlist item: for a combo opened *after a preceding cell edit* (e.g. Role right after
+  Grade), the boundlist renders with `offsetParent=null` — it paints as not-visible and no `role=option`
+  is ever clickable, even though the store is fully loaded. Native selection is deterministic:
+  `const combo = Ext.ComponentQuery.query('combobox').filter(c=>c.isVisible()).find(c=>c.hasFocus); const rec = combo.getStore().getRange().find(r => r.get(combo.displayField) === value); combo.select(rec); combo.fireEvent('select', combo, rec);` then `Tab`.
+  Selecting the record alone does not write the cell — the `Tab` commit is required (verified it retains).
+  Do NOT type into a re-located input (`.x-grid-cell-editor input`) — that steals focus from the freshly
+  opened combo so its query never fires.
+- **Coupled auto-populate.** Some cells populate from others (Role → Location, Grade → rate) and the
+  exact value is user/master-data derived. Wait for the coupled field to settle, assert the mechanism
+  (non-empty / changed), and record the runtime value as a variance rather than hardcoding a
+  recording-time value — same principle as the Date Field Rule.
+
+`EstimatePage` implements these: `ensureLaborResourceRow`/`addLaborResourceRow`, `openGridCellEditorByHeader`,
+`selectResourceGridDropdown`, `activeCellEditorInput`, `boundlistOption`, and `updateCostsAndWaitForFinished`.
 
 ## Reference Files
 

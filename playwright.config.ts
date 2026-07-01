@@ -13,7 +13,9 @@ export default defineConfig({
     actionTimeout: 8_000,
     navigationTimeout: 45_000,
     screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
+    // Verification runs (POM_VERIFY=1) force a trace on green runs so pom-verify.mjs can
+    // record which locators actually resolved -> .verified.json (computed trust).
+    trace: process.env.POM_VERIFY === '1' ? 'on' : 'retain-on-failure',
   },
   expect: {
     timeout: 5_000,

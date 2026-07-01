@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from 'playwright/test';
 import { waitForAnyVisible, waitForNoLoading } from './twentyfive-cdp';
+import { xpathLiteral } from './pom/xpath';
 
 const DEFAULT_APP_URL = 'https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com/#quote';
 const TIMING_LOGS = process.env.PLAYWRIGHT_TIMING !== 'false';
@@ -158,11 +159,3 @@ export function logTiming(label: string, startedAt: number): void {
   console.log(`[timing] ${label}: ${Date.now() - startedAt}ms`);
 }
 
-function xpathLiteral(value: string): string {
-  if (!value.includes("'")) return `'${value}'`;
-  if (!value.includes('"')) return `"${value}"`;
-  return `concat(${value
-    .split("'")
-    .map((part) => `'${part}'`)
-    .join(', "\'", ')})`;
-}

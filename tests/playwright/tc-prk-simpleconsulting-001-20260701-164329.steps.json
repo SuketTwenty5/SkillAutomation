@@ -1,0 +1,110 @@
+{
+  "testCaseId": "TC-PRK-SimpleConsulting-001",
+  "title": "Create Simple Consulting Proposal with Labor Resource",
+  "source": "/Users/suketsuman/Downloads/TC-PRK-SimpleConsulting-001.md",
+  "generatedSpec": "tests/playwright/tc-prk-simpleconsulting-001-20260701-164329.spec.ts",
+  "reuseBasis": "full-match copy of tests/playwright/tc-prk-simpleconsulting-001.spec.ts",
+  "application": "Twenty5 iPE",
+  "baseUrl": "https://approuter-twenty5ipe-dev.cfapps.us10.hana.ondemand.com",
+  "objective": "Create a Simple Consulting Proposal, copy the best practice template, update Labor Resources, calculate cost and price, and verify proposal totals.",
+  "testData": {
+    "proposalTitle": "Prk test",
+    "proposalType": "Simple Consulting Proposal",
+    "plannedStart": "6/30/2027",
+    "plannedEnd": "9/29/2029",
+    "pursuitManager": "Tech User",
+    "lineOfBusiness": "RG01 - Regression Test",
+    "region": "US - New York",
+    "profitCenter": "RG23 - Spares",
+    "costCenter": "REG CC-3",
+    "reuseStrategy": "Use Best Practice Template",
+    "template": "DEMO: ProServ - Standard T&M",
+    "wbs": "1 Charge Code",
+    "laborGrade": "Senior Consultant",
+    "laborLocation": "P1810 India - Hyderabad",
+    "laborRole": "Functional Consultant",
+    "fte": "1",
+    "expectedFteDisplay": "1.000 FTE",
+    "expectedEffort": "4,592",
+    "expectedTotalPrice": "USD 298K",
+    "expectedTotalCost": "USD 185K",
+    "expectedMargin": "37.97%"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "sourceAction": "Navigate to app URL and log in",
+      "automation": "connectToTwentyFive reuses saved state or logs in with configured test credentials",
+      "classification": "mapped"
+    },
+    {
+      "step": 2,
+      "sourceAction": "Open Proposals and click New",
+      "automation": "ProposalSetupPage.navigateToProposals and startNewProposal",
+      "classification": "mapped"
+    },
+    {
+      "step": 3,
+      "sourceAction": "Select Simple Consulting Proposal",
+      "automation": "ProposalSetupPage.selectProposalType('Simple Consulting Proposal')",
+      "classification": "mapped"
+    },
+    {
+      "step": 4,
+      "sourceAction": "Enter title, dates, organization fields, and verify auto-populated values",
+      "automation": "Fill proposal setup fields using field-label scoped inputs and dropdowns",
+      "classification": "generated-glue"
+    },
+    {
+      "step": 5,
+      "sourceAction": "Copy from best practice template and wait for proposal save",
+      "automation": "Verify template section, click Copy, wait for save success, and capture saved quote URL",
+      "classification": "generated-glue"
+    },
+    {
+      "step": 6,
+      "sourceAction": "Open Project Scope and Labor Resources",
+      "automation": "Click tabs and verify WBS row / Labor Resources planning view",
+      "classification": "mapped"
+    },
+    {
+      "step": 7,
+      "sourceAction": "Set Grade, Role, and FTE on the 1 Charge Code labor row",
+      "automation": "Use active-grid row and header/column scoped cell locators with ExtJS editor inputs",
+      "classification": "generated-glue"
+    },
+    {
+      "step": 8,
+      "sourceAction": "Run Check & Save and verify final KPIs",
+      "automation": "Open Save menu, click Check & Save, wait for roll-up, and verify price/cost/margin text",
+      "classification": "generated-glue"
+    }
+  ],
+  "runtimeVariances": [
+    {
+      "field": "Proposal Title",
+      "sourceValue": "Prk test",
+      "runtimeBehavior": "ProposalSetupPage appends a readable timestamp before entry so repeated automation runs create unique proposals."
+    },
+    {
+      "field": "Proposal ID",
+      "sourceValue": "2026-10093",
+      "runtimeBehavior": "The source proposal ID is recording-specific. The script waits for and reports the newly saved #quote URL instead of hardcoding this ID."
+    },
+    {
+      "field": "Pursuit Manager",
+      "sourceValue": "Praveen kumbar",
+      "runtimeBehavior": "Auto-populates with the logged-in user. The recording used Praveen kumbar; this run uses the configured .env.local user (Tech User)."
+    },
+    {
+      "field": "Cost Center",
+      "sourceValue": "REG CC-3",
+      "runtimeBehavior": "The source says Cost Center auto-populates after selecting RG23 - Spares. If the dev UI leaves it blank, the script explicitly selects REG CC-3 before continuing."
+    },
+    {
+      "field": "Labor Resource Row",
+      "sourceValue": "Template copy creates row 1 Charge Code",
+      "runtimeBehavior": "The dev UI can open Labor Resources with no copied rows. The script clicks the grid add link and selects 1 Charge Code in the WBS cell before setting Grade, Role, and FTE."
+    }
+  ]
+}

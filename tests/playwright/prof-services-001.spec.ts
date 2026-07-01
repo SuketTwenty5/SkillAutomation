@@ -1,6 +1,6 @@
 import { test } from 'playwright/test';
 import { connectToTwentyFive } from './support/twentyfive-cdp';
-import { ProposalSetupPage, proposalSetupFields } from './support/proposal-setup-page';
+import { ProposalSetupPage, proposalSetupFields } from './support/pom';
 
 test.describe('TC-Prof-Services-001 Playwright migration', () => {
   test('Verify Proposal Setup Layout', async ({}, testInfo) => {

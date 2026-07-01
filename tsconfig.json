@@ -4,6 +4,10 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "strict": true,
+    // Must stay false: page objects use `readonly x = this.page.locator(...)` field initializers
+    // that reference the constructor's `page`. This matches Playwright's esbuild runtime. Flipping
+    // it to true (the ES2022 default) breaks those initializers with "page is undefined".
+    "useDefineForClassFields": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["node"]

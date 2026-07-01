@@ -1,6 +1,6 @@
 import { test } from 'playwright/test';
 import { connectToTwentyFive } from './support/twentyfive-cdp';
-import { ProposalSetupPage } from './support/proposal-setup-page';
+import { ProposalSetupPage } from './support/pom';
 
 const PDF_SOURCE = '/Users/suketsuman/Downloads/HowToCreateANewProjectProposalInTwentyfive-a71946f5-534b-4bdf-bf92-c.pdf';
 

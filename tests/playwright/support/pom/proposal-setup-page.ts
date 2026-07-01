@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from 'playwright/test';
-import { waitForAnyVisible, waitForNoLoading } from './twentyfive-cdp';
+import { waitForAnyVisible, waitForNoLoading } from '../twentyfive-cdp';
+import { normalizeText, xpathLiteral } from './xpath';
 
 type FieldKind = 'free text' | 'drop down' | 'date picker' | 'radio buttons';
 type FieldState =
@@ -820,10 +821,6 @@ export const proposalSetupFields: SetupFieldExpectation[] = [
   { name: 'Select Tag to Add', enabled: true, required: false, kind: 'drop down', state: { type: 'empty' } },
 ];
 
-function normalizeText(value: string): string {
-  return value.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
 function withReadableTimestamp(value: string): string {
   const normalized = normalizeText(value);
   if (!normalized) return formatReadableTimestamp();
@@ -1032,14 +1029,6 @@ function ciContainsDot(value: string): string {
   return `contains(translate(normalize-space(.), '${UPPER}', '${LOWER}'), ${xpathLiteral(value.toLowerCase())})`;
 }
 
-function xpathLiteral(value: string): string {
-  if (!value.includes("'")) return `'${value}'`;
-  if (!value.includes('"')) return `"${value}"`;
-  return `concat(${value
-    .split("'")
-    .map((part) => `'${part}'`)
-    .join(', "\'", ')})`;
-}
 
 async function browserDate(page: Page, plusDays: number): Promise<Date> {
   const timestamp = await page.evaluate((days) => {

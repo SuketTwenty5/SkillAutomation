@@ -1,6 +1,6 @@
 import { test } from 'playwright/test';
 import { connectToTwentyFive } from './support/twentyfive-cdp';
-import { ProposalSetupPage } from './support/proposal-setup-page';
+import { ProposalSetupPage } from './support/pom';
 
 const recordingData = {
   source: 'playwrightRecording/20260627_191218/recording.spec.ts',

@@ -1,6 +1,6 @@
 import { test } from 'playwright/test';
 import { connectToTwentyFive } from './support/twentyfive-cdp';
-import { ProposalSetupPage } from './support/proposal-setup-page';
+import { ProposalSetupPage } from './support/pom';
 
 const SCRIBE_SOURCE =
   'https://scribehow.com/o/xogHL4gvSieB6fk9ThvLcw/viewer/Creating_A_New_Project_Proposal__66G4u6P8TTe0QOpWDd5HmQ';

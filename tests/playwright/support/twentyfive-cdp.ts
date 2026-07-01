@@ -73,6 +73,7 @@ export async function connectToTwentyFive(options: CdpOptions = {}): Promise<Cdp
   const loginWaitMs = options.loginWaitMs ?? Number(process.env.PLAYWRIGHT_LOGIN_WAIT_MS ?? 120_000);
 
   const { browser, context } = await launchManagedChromeContext();
+  await installToastObserver(context);
   await restoreAuthStateIfFresh(context, appUrl);
 
   const page = await chooseUsefulPage(context);
@@ -130,6 +131,42 @@ async function launchManagedChromeContext(): Promise<{ browser: Browser; context
     throw new Error('Managed Playwright Chrome did not expose a browser instance.');
   }
   return { browser, context };
+}
+
+/**
+ * Install a session-wide transient-toast observer via addInitScript so it runs on every document
+ * (incl. reloads) without a per-spec call. ExtJS toasts auto-dismiss in ~2-4s; the observer records
+ * every short inserted text node into an in-page ring buffer so BasePage.expectToast can match a
+ * toast that already vanished — no long dead-wait polling. Idempotent per document.
+ */
+async function installToastObserver(context: BrowserContext): Promise<void> {
+  await context.addInitScript(() => {
+    const w = window as unknown as { __ipeToasts?: Array<{ text: string }>; __ipeToastObserver?: MutationObserver };
+    if (w.__ipeToastObserver || !document.documentElement) return;
+    w.__ipeToasts = w.__ipeToasts ?? [];
+    const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+    const record = (el: Element) => {
+      const raw = (el as HTMLElement).innerText ?? el.textContent ?? '';
+      const text = norm(raw);
+      if (!text || text.length > 400) return;
+      const buf = w.__ipeToasts!;
+      if (buf.length && buf[buf.length - 1].text === text) return;
+      buf.push({ text });
+      if (buf.length > 300) buf.splice(0, buf.length - 300);
+    };
+    const obs = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        m.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return;
+          const el = node as Element;
+          const hint = `${el.getAttribute?.('class') ?? ''} ${el.getAttribute?.('role') ?? ''}`;
+          if (/toast|message|notif|tip|alert/i.test(hint) || el.querySelectorAll('*').length < 12) record(el);
+        });
+      }
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+    w.__ipeToastObserver = obs;
+  });
 }
 
 async function restoreAuthStateIfFresh(context: BrowserContext, appUrl: string): Promise<void> {
@@ -303,39 +340,63 @@ async function loginWithTestUser(page: Page, timeoutMs: number): Promise<void> {
   }
 }
 
+/**
+ * Wait for the signed-in Twenty5 app shell, tolerating the ExtJS loader that can stall near 95%.
+ *
+ * Tiered, evidence-gated recovery (see SKILL.md "Auth And Chrome"):
+ *  1. Give the loader the FULL budget in one continuous poll. Reloading early restarts the SPA and
+ *     burns the budget — that premature 45s reload was the root cause of cold-start bootstrap
+ *     timeouts, not a poisoned session.
+ *  2. Recover with a single reload ONLY on positive evidence that the session is gone or the tab is
+ *     dead (a visible login/identity-provider form, about:blank, or a chrome-error page). If we are
+ *     already on the signed-in app origin the session is valid and the app is merely slow — never
+ *     reload (it would interrupt the loader) and never wipe the persistent profile.
+ */
 async function waitForAppShellWithOneRefresh(
   page: Page,
   timeoutMs: number,
   description: string,
   extraLocators: Locator[] = [],
 ): Promise<void> {
-  const firstWaitMs = Math.min(timeoutMs, 45_000);
   const startedAt = Date.now();
+  // Reserve a small tail (<=1/3 of the budget) so an evidence-gated reload + retry can still run,
+  // but spend the majority of the budget waiting continuously for the loader to finish.
+  const reserveMs = Math.min(40_000, Math.floor(timeoutMs / 3));
+  const firstWaitMs = Math.max(20_000, timeoutMs - reserveMs);
 
   try {
     await waitForAnyVisible(page, [...appShellLocators(page), ...extraLocators], firstWaitMs, description);
     return;
   } catch (error) {
-    if (!(await refreshOnceAfterAppNavigation(page, description))) {
+    // Only escalate on positive evidence of a lost session / dead tab. A slow-but-authenticated
+    // app origin is NOT a reason to reload or wipe — surface the timeout instead.
+    if (!(await looksUnauthenticatedOrDead(page))) {
       throw error;
     }
+    await refreshOnceAfterAppNavigation(page, description);
   }
 
-  const elapsed = Date.now() - startedAt;
-  const remainingMs = Math.max(15_000, timeoutMs - elapsed);
+  const remainingMs = Math.max(15_000, timeoutMs - (Date.now() - startedAt));
   await waitForAnyVisible(page, [...appShellLocators(page), ...extraLocators], remainingMs, description);
 }
 
-async function refreshOnceAfterAppNavigation(page: Page, description: string): Promise<boolean> {
-  if (!/hana\.ondemand\.com/i.test(page.url()) && !/^(about:blank|chrome-error:)/i.test(page.url())) return false;
+/**
+ * True only when the page proves we are NOT in the signed-in app: a visible login/identity-provider
+ * form (the reliable "session is gone" signal), a blank tab, or a chrome-error page. Being on the
+ * app origin mid-bootstrap is deliberately NOT treated as unauthenticated.
+ */
+async function looksUnauthenticatedOrDead(page: Page): Promise<boolean> {
+  if (/^(about:blank|chrome-error:)/i.test(page.url())) return true;
+  return anyVisible(loginLocators(page));
+}
 
-  console.warn(`[${description}] app shell did not appear after navigation; refreshing once before retrying.`);
+async function refreshOnceAfterAppNavigation(page: Page, description: string): Promise<void> {
+  console.warn(`[${description}] app shell absent and the page looks unauthenticated; reloading once before retrying.`);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 }).catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes('ERR_ABORTED')) throw error;
   });
   await waitForNoLoading(page, 30_000);
-  return true;
 }
 
 function readLoginCredentials(): LoginCredentials | undefined {

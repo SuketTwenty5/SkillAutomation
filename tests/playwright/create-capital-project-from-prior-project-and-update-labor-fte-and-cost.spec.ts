@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from 'playwright/test';
 import { test } from 'playwright/test';
 import { connectToTwentyFive, waitForNoLoading } from './support/twentyfive-cdp';
-import { ProposalSetupPage } from './support/proposal-setup-page';
+import { ProposalSetupPage } from './support/pom';
 import { clickAttached, clickTab, fastClick, openEstimateFromActiveTab, textLocator } from './support/twentyfive-ui';
 
 test.setTimeout(420_000);
