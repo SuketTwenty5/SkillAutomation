@@ -95,8 +95,9 @@ scripts/run-playwright-test.sh tests/playwright/<spec>.spec.ts --headed --retrie
   persist FTE/grid edits this way BEFORE any refresh/roll-up. Full policy in the SKILL.md "Save Menu Rule".
 - **Cost/price roll-up is recognised by intent, not the step name.** Trigger the procedure when a step
   does **any** of: expects the toast `Costs/revenues & formula-based costs and prices updated and rolled-up`;
-  tells you to click **Update Cost & Price(s)**; targets `//*[@titlelink="updateCostsWithFormula"]`; or
-  requires verifying a status as **Updated** (`Needs Refresh`/`Updating (n)`/`Currently running`). Then:
+  tells you to click **Update Cost & Price(s)**; targets `//*[@titlelink="updateCostsWithFormula"]`;
+  requires verifying a status as **Updated** (`Needs Refresh`/`Updating (n)`/`Currently running`); or
+  asks to verify/assert **Cost summary cards / cost widget values** (KPI Total Price/Cost/Margin). Then:
   refresh → click `//*[@titlelink="updateCostsWithFormula"]` → confirm the running status → poll the
   More-menu item `[itemId="mp_more_item_update_costs_btn"]` until `Finished` (reload while running). Use
   `EstimatePage.updateCostsAndWaitForFinished(...)`; never drive cost roll-ups through the Save-menu

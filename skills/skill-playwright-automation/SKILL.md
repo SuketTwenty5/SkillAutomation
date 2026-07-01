@@ -305,7 +305,10 @@ whenever **any** of the following is true — treat them as equivalent triggers 
 - it tells you to click **Update Cost & Price(s)** (by that label/instruction); **or**
 - it targets the element `//*[@titlelink="updateCostsWithFormula"]`; **or**
 - it requires verifying/checking a calculation **status as "Updated"** (or reads a status such as
-  `Needs Refresh` / `Updating (n)` / `Currently running`).
+  `Needs Refresh` / `Updating (n)` / `Currently running`); **or**
+- it asks to verify/assert the **Cost summary cards** or **cost widget values** (KPI header
+  Total Price/Cost/Margin, or any cost/price summary tile) — those values are only trustworthy after
+  the roll-up has finished, so run the procedure before reading them.
 
 Do **not** key off the step label/number (it may say "Check & Save", "Update Costs", "Calculate", etc.).
 When any trigger above matches, apply this procedure:
