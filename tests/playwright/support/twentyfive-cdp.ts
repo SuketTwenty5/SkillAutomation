@@ -274,7 +274,7 @@ async function loginWithTestUser(page: Page, timeoutMs: number): Promise<void> {
   const credentials = readLoginCredentials();
   if (!credentials) {
     throw new Error(
-      'Twenty5 login is required, but IPE_USERNAME/IPE_PASSWORD were not found in environment or /Users/suketsuman/Documents/LocalTestAutomation/.env.local.',
+      'Twenty5 login is required, but IPE_USERNAME/IPE_PASSWORD were not found in environment, IPE_ENV_FILE, or a .env.local at the repo root.',
     );
   }
 
@@ -343,7 +343,7 @@ function readLoginCredentials(): LoginCredentials | undefined {
   const password = process.env.IPE_PASSWORD;
   if (username && password) return { username, password };
 
-  const envPath = process.env.IPE_ENV_FILE ?? '/Users/suketsuman/Documents/LocalTestAutomation/.env.local';
+  const envPath = process.env.IPE_ENV_FILE ?? path.resolve(process.cwd(), '.env.local');
   if (!fs.existsSync(envPath)) return undefined;
 
   const parsed = parseEnvFile(fs.readFileSync(envPath, 'utf8'));

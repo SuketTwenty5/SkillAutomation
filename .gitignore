@@ -12,6 +12,9 @@ test-report.json
 *.log
 .idea/
 .skillautomation.env
+.env
+.env.local
+*.env.local
 .skillautomation/
 __pycache__/
 *.pyc

@@ -124,7 +124,7 @@ async function waitForSignedInApp(page) {
 async function loginWithTestUser(page) {
   const credentials = readLoginCredentials();
   if (!credentials) {
-    throw new Error('Twenty5 login is required, but IPE_USERNAME/IPE_PASSWORD were not found in environment or /Users/suketsuman/Documents/LocalTestAutomation/.env.local.');
+    throw new Error('Twenty5 login is required, but IPE_USERNAME/IPE_PASSWORD were not found in environment, IPE_ENV_FILE, or a .env.local at the repo root.');
   }
 
   console.log('Recording browser is on a login page. Attempting automatic login with the configured test user.');
@@ -192,7 +192,7 @@ function readLoginCredentials() {
     return { username: process.env.IPE_USERNAME, password: process.env.IPE_PASSWORD };
   }
 
-  const envPath = process.env.IPE_ENV_FILE || '/Users/suketsuman/Documents/LocalTestAutomation/.env.local';
+  const envPath = process.env.IPE_ENV_FILE || `${process.cwd()}/.env.local`;
   if (!fs.existsSync(envPath)) return undefined;
 
   const parsed = parseEnvFile(fs.readFileSync(envPath, 'utf8'));
